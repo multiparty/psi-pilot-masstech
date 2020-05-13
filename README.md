@@ -1,2 +1,5 @@
 # psi-pilot-masstech
-Private Set Intersection demo for bank fraud detection
+This pilot project for MassTech provides two different solutions to handle Private Set Intersection or Private Membership Testing to enable bank fraud detection. In this banks can query each others list of fraudulent customers, while only learning if their query is a match or not.  
+
+The first solution is a peer-to-peer setting where banks communicate directly with each other, which is more straightforward to implement but requires banks to be online when a different bank wants to query their data. It also incurs a higher bandwidth cost for participating banks when updating their records.  
+The second version enables banks to securely outsource the computation to a different set of non-colluding parties, which allows them to only be online when they update their list of fraudulent customers. The computation is then performed by two or more compute parties, who only learn the size of the list of fraudulent customers, and how often a query is performed. Both versions assume a semi-honest model, i.e. where no parties deviate from the prescribed protocol.
