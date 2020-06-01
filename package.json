@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/multiparty/psi-pilot-masstech#readme",
   "dependencies": {
+    "csv-writer": "^1.6.0",
     "express": "^4.17.1",
     "oprf": "^2.0.0"
   }
