@@ -67,6 +67,9 @@ function generateName(){
   return name;
 }
 
+/**
+ * @returns {string} randomly generated address in format "number street, city, state zipcode"
+ */
 function generateAddress(){
   let genAddress = fakerator.entity.address();
 
