@@ -38,6 +38,26 @@ async function generateData(num, writeToFile) {
 }
 
 /**
+ * @param  {int} num - number of data entries needed
+ * @param  {Boolean} writeToFile - whether to write to a csv file or not
+ * @returns {object[]} array of data entries that were generated
+ */
+async function generateSsnData(num, writeToFile) {
+  let data = [];
+
+  for(let i = 0; i < num; i++) {
+    let ssn = generateSSN();
+    data.push({ssn: ssn, name: name, address: address});
+  }
+
+  if(writeToFile){
+    await csvWriter.writeRecords(data);
+  }
+
+  return data;
+}
+
+/**
  * @returns {string} randomly generated, 9-digit social security number
  */
 function generateSSN(){
@@ -75,3 +95,4 @@ function generateAddress(){
 }
 
 exports.generateData = generateData;
+exports.generateSsnData = generateSsnData;
