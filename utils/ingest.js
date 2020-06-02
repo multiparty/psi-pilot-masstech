@@ -28,3 +28,5 @@ function readCsv(filePath){
 
   return result;
 }
+
+exports.readCsv = readCsv;
