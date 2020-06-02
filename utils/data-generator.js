@@ -47,7 +47,7 @@ async function generateSsnData(num, writeToFile) {
 
   for(let i = 0; i < num; i++) {
     let ssn = generateSSN();
-    data.push({ssn: ssn, name: name, address: address});
+    data.push({ssn: ssn});
   }
 
   if(writeToFile){
