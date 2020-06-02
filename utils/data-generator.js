@@ -16,6 +16,7 @@ const csvWriter = createCsvWriter({
 
 
 /**
+ * Generates a list of random data entries which can be output to a csv file
  * @param  {int} num - number of data entries needed
  * @param  {Boolean} writeToFile - whether to write to a csv file or not
  * @returns {object[]} array of data entries that were generated
@@ -38,6 +39,7 @@ async function generateData(num, writeToFile) {
 }
 
 /**
+ * Generates a list of random SSNs which can be output to a csv file
  * @param  {int} num - number of data entries needed
  * @param  {Boolean} writeToFile - whether to write to a csv file or not
  * @returns {object[]} array of data entries that were generated
@@ -58,6 +60,7 @@ async function generateSsnData(num, writeToFile) {
 }
 
 /**
+ * Generates a random SSN
  * @returns {string} randomly generated, 9-digit social security number
  */
 function generateSSN(){
@@ -72,6 +75,7 @@ function generateSSN(){
 }
 
 /**
+ * Generates a random name
  * * @returns {string} randomly generated name in format "lastName, firstName"
  */
 function generateName(){
@@ -84,6 +88,7 @@ function generateName(){
 }
 
 /**
+ * Generates a random address
  * @returns {string} randomly generated address in format "number street, city, state zipcode"
  */
 function generateAddress(){
