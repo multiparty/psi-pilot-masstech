@@ -6,6 +6,7 @@ const dataGenerator = require('../utils/data-generator');
 const ingest = require('../utils/ingest');
 
 /**
+ * Masks a single input with an environment key, and appends it to a table of masked data
  * @param  {string} input - data to be masked and stored in the file
  * @param  {string} fileName - name of the file to add the input to
  */
@@ -23,11 +24,28 @@ function maskAndStoreInput(input, fileName) {
 }
 
 /**
- * @param  {Array} input - array of data to be masked and stored in the file
+ * Masks an array of string data entries with an environment key, and appends each to a table of masked data
+ * @param  {Array} input - array of strings to be masked and stored in the file
  * @param  {string} fileName - name of the file to append the data to
  */
-function maskAndStoreList(input, fileName) {
+function maskAndStoreArray(input, fileName) {
+  input.forEach(entry => {
+    maskAndStoreInput(entry, fileName);
+  });
+}
 
+/**
+ * Takes an array of objects and masks and appends the ssn property of each to a table of masked data
+ * @param  {Array} input - array of objects to be masked and stored in the file
+ * @param  {string} fileName - name of the file to append the data to
+ */
+function maskAndStoreObjects(input, fileName) {
+  let stringInput = [];
+  input.forEach(entry => {
+    stringInput.push(entry.ssn);
+  });
+
+  maskAndStoreArray(stringInput, fileName);
 }
 
 
