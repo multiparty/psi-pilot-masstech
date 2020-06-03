@@ -51,7 +51,7 @@ function maskAndStoreObjects(input, fileName) {
 
 /**
  * Raises every entry in an array to A's key, and returns the raised values. Returns 403 error if shared secret does not match.
- * @param  {string[]} input - entries to be raised to A's key
+ * @param  {string[]} input - Encoded entries to be raised to A's key
  * @param  {string} secret - shared secret between requesting and receiving parties
  * @returns {string[]}
  */
@@ -59,20 +59,19 @@ function raiseToKey(input, secret) {
   if (secret === process.env.SHARED) {
     const oprf = new OPRF();
 
-    let sendBack = oprf.ready.then(function () {
+    let result = oprf.ready.then(function () {
       const key = oprf.hashToPoint(process.env.KEY);
 
-      let result = [];
+      let data = [];
 
       input.forEach(entry => {
-        const maskedValue = oprf.scalarMult(oprf.hashToPoint(entry), key)
-        result.push(oprf.encodePoint(maskedValue, 'UTF-8'));
+        const maskedValue = oprf.scalarMult(oprf.decodePoint(entry, 'UTF-8'), key)
+        data.push(oprf.encodePoint(maskedValue, 'UTF-8'));
       });
 
-      return result;
+      return data;
     });
-
-    return sendBack;
+    return result;
   } else {
     return "Error 403";
   }
@@ -95,13 +94,5 @@ function queryTable(secret, fileName) {
   }
 }
 
-const data = dataGenerator.generateData(50, false);
-var input = [];
-data.forEach(entry => {
-  input.push(entry.ssn);
-});
-
-(async () => {
-  //var output = await maskAndStoreArray(input, "table.txt");
-  queryTable(process.env.SHARED, 'table.txt');
-})();
+exports.raiseToKey = raiseToKey;
+exports.queryTable = queryTable;
