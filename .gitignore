@@ -105,3 +105,6 @@ dist
 
 # Data file created by data-generator
 generated-data.csv
+
+# Table data file for p2p implementation
+table.txt
