@@ -4,7 +4,7 @@
   "description": "This pilot project for MassTech provides two different solutions to handle Private Set Intersection or Private Membership Testing to enable bank fraud detection. In this banks can query each others list of fraudulent customers, while only learning if their query is a match or not.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --coverage"
   },
   "repository": {
     "type": "git",
@@ -17,7 +17,14 @@
   },
   "homepage": "https://github.com/multiparty/psi-pilot-masstech#readme",
   "dependencies": {
+    "csv-parse": "^4.10.1",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "fakerator": "^0.3.1",
     "oprf": "^2.0.0"
+  },
+  "devDependencies": {
+    "jest": "^26.0.1"
   }
 }
