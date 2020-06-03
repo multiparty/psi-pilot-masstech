@@ -25,9 +25,9 @@ function generateData(num, writeToFile) {
   let data = [];
 
   for (let i = 0; i < num; i++) {
-    let ssn = generateSSN();
-    let name = generateName();
-    let address = generateAddress();
+    const ssn = generateSSN();
+    const name = generateName();
+    const address = generateAddress();
     data.push({ ssn: ssn, name: name, address: address });
   }
 
@@ -50,7 +50,7 @@ async function generateSsnData(num, writeToFile) {
   let data = [];
 
   for (let i = 0; i < num; i++) {
-    let ssn = generateSSN();
+    const ssn = generateSSN();
     data.push({ ssn: ssn });
   }
 
@@ -69,7 +69,7 @@ async function generateSsnData(num, writeToFile) {
  */
 function generateSSN() {
   let newSSN = '';
-  let numbers = '0123456789';
+  const numbers = '0123456789';
 
   for (let i = 0; i < 9; i++) {
     newSSN += numbers.charAt(Math.floor(Math.random() * numbers.length));
@@ -83,10 +83,10 @@ function generateSSN() {
  * * @returns {string} randomly generated name in format "lastName, firstName"
  */
 function generateName() {
-  let firstName = fakerator.names.firstName();
-  let lastName = fakerator.names.lastName();
+  const firstName = fakerator.names.firstName();
+  const lastName = fakerator.names.lastName();
 
-  let name = lastName + ", " + firstName;
+  const name = lastName + ", " + firstName;
 
   return name;
 }
@@ -96,14 +96,12 @@ function generateName() {
  * @returns {string} randomly generated address in format "number street, city, state zipcode"
  */
 function generateAddress() {
-  let genAddress = fakerator.entity.address();
+  const genAddress = fakerator.entity.address();
 
-  let address = genAddress.street + ", " + genAddress.city + ", " + genAddress.state + " " + genAddress.zip;
+  const address = genAddress.street + ", " + genAddress.city + ", " + genAddress.state + " " + genAddress.zip;
 
   return address;
 }
 
 exports.generateData = generateData;
 exports.generateSsnData = generateSsnData;
-
-generateSsnData(5, true);

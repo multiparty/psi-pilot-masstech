@@ -16,16 +16,7 @@ function readCsv(filePath) {
   });
 
   // make sure that keys of objects are all lowercase
-  let result = [];
-  data.forEach(obj => {
-    let keys = Object.keys(obj);
-    let newobj = {};
-    for (let i = 0; i < keys.length; i++) {
-      newobj[keys[i].toLowerCase()] = obj[keys[i]];
-    }
-    result.push(newobj);
-  });
-
+  const result = data.map(x => Object.fromEntries(Object.entries(x).map(([k, v]) => [k.toLowerCase(), v])));
 
   return result;
 }
