@@ -1,12 +1,12 @@
 
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
+const fs = require('fs');
 
 const Fakerator = require("fakerator");
 const fakerator = Fakerator();
 
 // Set parameters of CSV writer, should add new header for each data type
-const csvWriter = createCsvWriter({
-  path: 'generated-data.csv',
+const csvStringifier = createCsvStringifier({
   header: [
     { id: 'ssn', title: 'SSN' },
     { id: 'name', title: 'Name' },
@@ -21,7 +21,7 @@ const csvWriter = createCsvWriter({
  * @param  {Boolean} writeToFile - whether to write to a csv file or not
  * @returns {object[]} array of data entries that were generated
  */
-async function generateData(num, writeToFile) {
+function generateData(num, writeToFile) {
   let data = [];
 
   for (let i = 0; i < num; i++) {
@@ -32,7 +32,9 @@ async function generateData(num, writeToFile) {
   }
 
   if (writeToFile) {
-    await csvWriter.writeRecords(data);
+    const header = csvStringifier.getHeaderString();
+    const body = csvStringifier.stringifyRecords(data);
+    fs.writeFileSync('generated-data.csv', header + body);
   }
 
   return data;
@@ -49,11 +51,13 @@ async function generateSsnData(num, writeToFile) {
 
   for (let i = 0; i < num; i++) {
     let ssn = generateSSN();
-    data.push({ ssn: ssn, name: name, address: address });
+    data.push({ ssn: ssn });
   }
 
   if (writeToFile) {
-    await csvWriter.writeRecords(data);
+    const header = csvStringifier.getHeaderString();
+    const body = csvStringifier.stringifyRecords(data);
+    fs.writeFileSync('generated-data.csv', header + body);
   }
 
   return data;
@@ -79,8 +83,8 @@ function generateSSN() {
  * * @returns {string} randomly generated name in format "lastName, firstName"
  */
 function generateName() {
-  let firstName = fakerator.names.firstName();//firstNames[Math.floor(Math.random()*firstNames.length)];
-  let lastName = fakerator.names.lastName();//lastNames[Math.floor(Math.random()*lastNames.length)];
+  let firstName = fakerator.names.firstName();
+  let lastName = fakerator.names.lastName();
 
   let name = lastName + ", " + firstName;
 
@@ -101,3 +105,5 @@ function generateAddress() {
 
 exports.generateData = generateData;
 exports.generateSsnData = generateSsnData;
+
+generateSsnData(5, true);
