@@ -46,7 +46,7 @@ function generateData(num, writeToFile) {
  * @param  {Boolean} writeToFile - whether to write to a csv file or not
  * @returns {object[]} array of data entries that were generated
  */
-async function generateSsnData(num, writeToFile) {
+function generateSsnData(num, writeToFile) {
   let data = [];
 
   for (let i = 0; i < num; i++) {
