@@ -5,7 +5,7 @@ const OPRF = require('oprf');
 const fs = require('fs');
 const ingest = require('../utils/ingest');
 
-const encodeType = 'UTF-8';
+const encodeType = 'ASCII';
 
 const csvStringifier = createCsvStringifier({
   header: [
@@ -58,16 +58,12 @@ function maskAndStoreArray(input, fileName) {
       dataToWrite.push({'ssn': encodedEntry});
     })
 
-    console.log("Data: ")
-    console.log(dataToWrite);
-
     let header = "";
     if(!fs.existsSync(fileName)){
       header = csvStringifier.getHeaderString();
     }
 
     const body = csvStringifier.stringifyRecords(dataToWrite);
-    console.log("Written: "+header+body);
     fs.appendFileSync(fileName, header + body);
   });
 }
@@ -109,7 +105,7 @@ function raiseToKey(input, secret) {
   if (secret === process.env.SHARED) {
     const oprf = new OPRF();
 
-    let result = oprf.ready.then(function () {
+    return oprf.ready.then(function () {
       const key = oprf.hashToPoint(process.env.KEY);
 
       let data = [];
@@ -121,7 +117,6 @@ function raiseToKey(input, secret) {
 
       return data;
     });
-    return result;
   } else {
     return "Error 403";
   }
@@ -152,3 +147,5 @@ function queryTable(secret, fileName) {
 exports.raiseToKey = raiseToKey;
 exports.queryTable = queryTable;
 exports.maskAndStoreObjects = maskAndStoreObjects;
+exports.maskAndStoreArray = maskAndStoreArray;
+exports.maskAndStoreInput = maskAndStoreInput;

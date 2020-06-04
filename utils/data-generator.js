@@ -5,15 +5,6 @@ const fs = require('fs');
 const Fakerator = require("fakerator");
 const fakerator = Fakerator();
 
-// Set parameters of CSV writer, should add new header for each data type
-const csvStringifier = createCsvStringifier({
-  header: [
-    { id: 'ssn', title: 'SSN' },
-    { id: 'name', title: 'Name' },
-    { id: 'address', title: 'Address' },
-  ]
-});
-
 
 /**
  * Generates a list of random data entries which can be output to a csv file
@@ -23,6 +14,15 @@ const csvStringifier = createCsvStringifier({
  */
 function generateData(num, writeToFile) {
   let data = [];
+
+  // Set parameters of CSV writer, should add new header for each data type
+  const csvStringifier = createCsvStringifier({
+    header: [
+      { id: 'ssn', title: 'SSN' },
+      { id: 'name', title: 'Name' },
+      { id: 'address', title: 'Address' },
+    ]
+  });
 
   for (let i = 0; i < num; i++) {
     const ssn = generateSSN();
@@ -48,6 +48,13 @@ function generateData(num, writeToFile) {
  */
 function generateSsnData(num, writeToFile) {
   let data = [];
+
+  // Set parameters of CSV writer, should add new header for each data type
+  const csvStringifier = createCsvStringifier({
+    header: [
+      { id: 'ssn', title: 'SSN' },
+    ]
+  });
 
   for (let i = 0; i < num; i++) {
     const ssn = generateSSN();
@@ -105,3 +112,5 @@ function generateAddress() {
 
 exports.generateData = generateData;
 exports.generateSsnData = generateSsnData;
+
+generateSsnData(10, true);
