@@ -107,4 +107,4 @@ dist
 generated-data.csv
 
 # Table data file for p2p implementation
-table.txt
+*.csv
