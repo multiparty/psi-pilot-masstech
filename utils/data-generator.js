@@ -71,6 +71,21 @@ function generateSsnData(num, writeToFile) {
 }
 
 /**
+ * Randomly generates a list of SSNs
+ * @param  {int} num - number of SSNs to be generated
+ * @returns {string[]} list of randomly generated SSNs
+ */
+function generateSsnArray(num) {
+  let data = [];
+
+  for(let i = 0; i < num; i++){
+    data.push(generateSSN());
+  }
+
+  return data;
+}
+
+/**
  * Generates a random SSN
  * @returns {string} randomly generated, 9-digit social security number
  */
@@ -112,5 +127,4 @@ function generateAddress() {
 
 exports.generateData = generateData;
 exports.generateSsnData = generateSsnData;
-
-generateSsnData(10, true);
+exports.generateSsnArray = generateSsnArray;
