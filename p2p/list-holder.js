@@ -32,7 +32,7 @@ function maskAndStoreInput(input, fileName) {
     dataToWrite.push(testObject);
 
     let header = "";
-    if(!fs.existsSync(fileName)){
+    if (!fs.existsSync(fileName)) {
       header = csvStringifier.getHeaderString();
     }
 
@@ -51,15 +51,14 @@ function maskAndStoreArray(input, fileName) {
   return oprf.ready.then(function () {
     const key = oprf.hashToPoint(process.env.KEY);
 
-    let dataToWrite = [];
-    input.forEach(entry => {
+    const dataToWrite = input.map(entry => {
       const maskedEntry = oprf.scalarMult(oprf.hashToPoint(entry), key);
       const encodedEntry = oprf.encodePoint(maskedEntry, encodeType);
-      dataToWrite.push({'ssn': encodedEntry});
+      return { 'ssn': encodedEntry }
     })
 
     let header = "";
-    if(!fs.existsSync(fileName)){
+    if (!fs.existsSync(fileName)) {
       header = csvStringifier.getHeaderString();
     }
 
@@ -78,15 +77,14 @@ function maskAndStoreObjects(input, fileName) {
   return oprf.ready.then(function () {
     const key = oprf.hashToPoint(process.env.KEY);
 
-    let dataToWrite = [];
-    input.forEach(entry => {
+    const dataToWrite = input.map(entry => {
       const maskedEntry = oprf.scalarMult(oprf.hashToPoint(entry.ssn), key);
       const encodedEntry = oprf.encodePoint(maskedEntry, encodeType);
-      dataToWrite.push({'ssn': encodedEntry});
+      return { 'ssn': encodedEntry };
     })
 
     let header = "";
-    if(!fs.existsSync(fileName)){
+    if (!fs.existsSync(fileName)) {
       header = csvStringifier.getHeaderString();
     }
 
@@ -108,11 +106,9 @@ function raiseToKey(input, secret) {
     return oprf.ready.then(function () {
       const key = oprf.hashToPoint(process.env.KEY);
 
-      let data = [];
-
-      input.forEach(entry => {
+      const data = input.map(entry => {
         const maskedValue = oprf.scalarMult(oprf.decodePoint(entry, encodeType), key)
-        data.push(oprf.encodePoint(maskedValue, encodeType));
+        return oprf.encodePoint(maskedValue, encodeType);
       });
 
       return data;
@@ -133,9 +129,8 @@ function queryTable(secret, fileName) {
   if (secret === process.env.SHARED) {
     const tableData = ingest.readCsv(fileName);
 
-    let result = [];
-    tableData.forEach(entry => {
-      result.push(entry.ssn);
+    const result = tableData.map(entry => {
+      return entry.ssn;
     })
 
     return result;
