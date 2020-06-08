@@ -42,4 +42,9 @@ router.get('/listdata', (req, res, next) => {
   }
 });
 
+router.put('/listname/:fileName', (req, res, next) => {
+  fileName = req.params.fileName + '.csv';
+  res.status(200).send("File changed to " + fileName + " successfully");
+});
+
 module.exports = router;

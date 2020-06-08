@@ -22,7 +22,7 @@ router.get('/maskWithHolderKey', (req, res, next) => {
 
     var options = {
       method: 'GET',
-      url: 'http://' + process.env.OTHER_DOMAIN + '/listqueries/raiseToKey',
+      url: 'http://' + process.env.OTHER_DOMAIN + '/listholder/raiseToKey',
       headers:
       {
         'cache-control': 'no-cache',
@@ -44,13 +44,14 @@ router.get('/maskWithHolderKey', (req, res, next) => {
       json: true
     };
 
+    // send to list holder
     request(options, function (error, response, body) {
       if (error) throw new Error(error);
 
       const result = body.map(entry => {
         return oprf.encodePoint(oprf.unmaskPoint(oprf.decodePoint(entry, encodeType), key), encodeType);
       });
-      res.status(400).send(result);
+      res.status(200).send(result);
     });
   });
 });
@@ -63,7 +64,7 @@ router.get('/getAndDecodeTable', async (req, res, next) => {
 
     var options = {
       method: 'GET',
-      url: 'http://' + process.env.OTHER_DOMAIN + '/listqueries/listdata',
+      url: 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata',
       headers:
       {
         'cache-control': 'no-cache',
@@ -127,7 +128,7 @@ router.get('/checkIfInList', (req, res, next) => {
     request(options, function (error, response, maskedInput) {
       if (error) throw new Error(error);
 
-      options.url = 'http://' + process.env.OTHER_DOMAIN + '/listqueries/listdata';
+      options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata';
       options.body = { 'secret': secret };
 
       request(options, function (error, response, tableData) {

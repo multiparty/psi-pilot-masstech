@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const OPRF = require('oprf');
 const fs = require('fs');
+const ingest = require('../../utils/ingest');
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
 
 const encodeType = process.env.ENCODE_TYPE;
@@ -12,6 +13,11 @@ const csvStringifier = createCsvStringifier({
     { id: 'ssn', title: 'SSN' },
   ]
 })
+
+router.put('/listname/:fileName', (req, res, next) => {
+  fileName = req.params.fileName + '.csv';
+  res.status(200).send("File changed to " + fileName + " successfully");
+});
 
 // send object { input: SSNum }
 router.post('/singleUpdate', (req, res, next) => {
@@ -76,6 +82,43 @@ router.post('/arrayUpdate', (req, res, next) => {
     fs.appendFileSync(fileName, header + body);
     res.status(200).send('Complete!');
   });
+});
+
+router.get('/raiseToKey', (req, res, next) => {
+  if(req.body.secret != process.env.SHARED){
+    res.status(403).send("Error 403: Incorrect shared secret value");
+  } else {
+    const input = req.body.input;
+    oprf.ready.then(function () {
+      const key = oprf.hashToPoint(process.env.KEY);
+
+      const data = input.map(entry => {
+        const maskedValue = oprf.scalarMult(oprf.decodePoint(entry, encodeType), key);
+        return oprf.encodePoint(maskedValue, encodeType);
+      });
+
+      res.status(200).json(data);
+    });
+  }
+});
+
+router.get('/listdata', (req, res, next) => {
+  if(req.body.secret != process.env.SHARED) {
+    res.status(403).send("Error 403: Incorrect shared secret value");
+  } else {
+    const tableData = ingest.readCsv(fileName);
+
+    const result = tableData.map(entry => {
+      return entry.ssn;
+    });
+
+    res.status(200).json(result);
+  }
+});
+
+router.put('/listname/:fileName', (req, res, next) => {
+  fileName = req.params.fileName + '.csv';
+  res.status(200).send("File changed to " + fileName + " successfully");
 });
 
 module.exports = router;

@@ -13,11 +13,11 @@ app.listen(port, () => {
 });
 
 
-const listQueryRoute = require('./routes/list-queries');
-app.use('/listqueries', listQueryRoute);
+// const listQueryRoute = require('./routes/list-queries');
+// app.use('/listqueries', listQueryRoute);
 
-const listUpdateRoute = require('./routes/list-updates');
-app.use('/listupdates', listUpdateRoute);
+const listUpdateRoute = require('./routes/list-holder');
+app.use('/listholder', listUpdateRoute);
 
 const queryListRoute = require('./routes/query-list');
 app.use('/querylist', queryListRoute);
