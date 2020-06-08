@@ -2,10 +2,9 @@ const express = require('express');
 const router = express.Router();
 const OPRF = require('oprf');
 const fs = require('fs');
-const ingest = require('../../utils/ingest');
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
 
-const encodeType = 'ASCII';
+const encodeType = process.env.ENCODE_TYPE;
 var fileName = 'table.csv'
 const oprf = new OPRF();
 const csvStringifier = createCsvStringifier({
@@ -31,7 +30,7 @@ router.post('/singleUpdate', (req, res, next) => {
 
     const body = csvStringifier.stringifyRecords(dataToWrite);
     fs.appendFileSync(fileName, header + body);
-    res.status(400).send('Complete!');
+    res.status(200).send('Complete!');
   });
 });
 
@@ -53,7 +52,7 @@ router.post('/objectUpdate', (req, res, next) => {
 
     const body = csvStringifier.stringifyRecords(dataToWrite);
     fs.appendFileSync(fileName, header + body);
-    res.status(400).send('Complete!');
+    res.status(200).send('Complete!');
   });
 });
 
@@ -75,7 +74,7 @@ router.post('/arrayUpdate', (req, res, next) => {
 
     const body = csvStringifier.stringifyRecords(dataToWrite);
     fs.appendFileSync(fileName, header + body);
-    res.status(400).send('Complete!');
+    res.status(200).send('Complete!');
   });
 });
 
