@@ -41,7 +41,7 @@ function sendToListHolder(input, key, secret) {
  */
 function getAndDecodeTable(secret, fileName) {
   const oprf = new OPRF();
-  let result = oprf.ready.then(function () {
+  return oprf.ready.then(function () {
     const table = listHolder.queryTable(secret, fileName);
 
     const decodedTable = table.map(entry => {
@@ -50,7 +50,6 @@ function getAndDecodeTable(secret, fileName) {
 
     return decodedTable;
   });
-  return result;
 }
 
 /**
@@ -65,7 +64,7 @@ function checkEntriesInTable(input, secret, fileName) {
   return oprf.ready.then(async function () {
     const key = oprf.generateRandomScalar();
 
-    let maskedInput = await sendToListHolder(input, key, secret);
+    const maskedInput = await sendToListHolder(input, key, secret);
 
     const tableData = await getAndDecodeTable(secret, fileName);
 

@@ -26,10 +26,7 @@ function maskAndStoreInput(input, fileName) {
 
     const maskedData = oprf.scalarMult(oprf.hashToPoint(input), key);
     const encodedData = oprf.encodePoint(maskedData, encodeType);
-    let dataToWrite = [];
-    let testObject = {};
-    testObject.ssn = encodedData;
-    dataToWrite.push(testObject);
+    const dataToWrite = [{'ssn': encodedData}];
 
     let header = "";
     if (!fs.existsSync(fileName)) {
@@ -55,7 +52,7 @@ function maskAndStoreArray(input, fileName) {
       const maskedEntry = oprf.scalarMult(oprf.hashToPoint(entry), key);
       const encodedEntry = oprf.encodePoint(maskedEntry, encodeType);
       return { 'ssn': encodedEntry }
-    })
+    });
 
     let header = "";
     if (!fs.existsSync(fileName)) {
@@ -81,7 +78,7 @@ function maskAndStoreObjects(input, fileName) {
       const maskedEntry = oprf.scalarMult(oprf.hashToPoint(entry.ssn), key);
       const encodedEntry = oprf.encodePoint(maskedEntry, encodeType);
       return { 'ssn': encodedEntry };
-    })
+    });
 
     let header = "";
     if (!fs.existsSync(fileName)) {
@@ -131,7 +128,7 @@ function queryTable(secret, fileName) {
 
     const result = tableData.map(entry => {
       return entry.ssn;
-    })
+    });
 
     return result;
   } else {
