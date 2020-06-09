@@ -5,7 +5,7 @@ const fs = require('fs');
 const ingest = require('../../utils/ingest');
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
 
-const encodeType = process.env.ENCODE_TYPE;
+const encodeType = 'ASCII';
 var fileName = 'table.csv'
 const oprf = new OPRF();
 const csvStringifier = createCsvStringifier({
@@ -16,12 +16,16 @@ const csvStringifier = createCsvStringifier({
 
 router.put('/listname/:fileName', (req, res, next) => {
   fileName = req.params.fileName + '.csv';
+  if(req.body.encodeType) encodeType = req.body.encodeType;
+
   res.status(200).send("File changed to " + fileName + " successfully");
 });
 
 // send object { input: SSNum }
 router.post('/singleUpdate', (req, res, next) => {
   const input = req.body.input;
+  if(req.body.encodeType) encodeType = req.body.encodeType;
+
   oprf.ready.then(function () {
     const key = oprf.hashToPoint(process.env.KEY);
 
@@ -42,6 +46,8 @@ router.post('/singleUpdate', (req, res, next) => {
 
 router.post('/objectUpdate', (req, res, next) => {
   const input = req.body.input;
+  if(req.body.encodeType) encodeType = req.body.encodeType;
+
   oprf.ready.then(function () {
     const key = oprf.hashToPoint(process.env.KEY);
 
@@ -64,6 +70,8 @@ router.post('/objectUpdate', (req, res, next) => {
 
 router.post('/arrayUpdate', (req, res, next) => {
   const input = req.body.input;
+  if(req.body.encodeType) encodeType = req.body.encodeType;
+
   oprf.ready.then(function () {
     const key = oprf.hashToPoint(process.env.KEY);
 

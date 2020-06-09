@@ -5,8 +5,19 @@ const router = express.Router();
 const request = require('request');
 const OPRF = require('oprf');
 
-const encodeType = process.env.ENCODE_TYPE;
+// Set to ASCII encoding by default
+let encodeType = 'ASCII';
+let domain = 'localhost:3000';
+let holderDomain = 'localhost:8080';
 const oprf = new OPRF();
+
+router.put('/setparams', (req, res, next) => {
+  encodeType = req.body.encodeType;
+  domain = req.body.domain;
+  holderDomain = req.body.holderDomain;
+
+  res.status(200).send("Encoding set to " + encodeType + ", domain set to " + domain + ", and holder domain set to " + holderDomain);
+});
 
 router.get('/maskWithHolderKey', (req, res, next) => {
   const input = req.body.input;
@@ -22,13 +33,13 @@ router.get('/maskWithHolderKey', (req, res, next) => {
 
     var options = {
       method: 'GET',
-      url: 'http://' + process.env.OTHER_DOMAIN + '/listholder/raiseToKey',
+      url: 'http://' + holderDomain + '/listholder/raiseToKey',
       headers:
       {
         'cache-control': 'no-cache',
         Connection: 'keep-alive',
         //'Content-Length': '99',
-        Host: process.env.OTHER_DOMAIN,
+        Host: holderDomain,
         'Postman-Token': 'fc1f1da5-31d4-46b3-a004-a4652933ff5d,d058b93b-e7a8-43c0-b1fd-690ba3b4fd73',
         'Cache-Control': 'no-cache',
         Accept: '*/*',
@@ -64,12 +75,12 @@ router.get('/getAndDecodeTable', async (req, res, next) => {
 
     var options = {
       method: 'GET',
-      url: 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata',
+      url: 'http://' + holderDomain + '/listholder/listdata',
       headers:
       {
         'cache-control': 'no-cache',
         Connection: 'keep-alive',
-        Host: process.env.OTHER_DOMAIN,
+        Host: holderDomain,
         'Postman-Token': '46b7e7e1-a310-4a8e-9f9c-84adcb772599,a317a329-fbcd-46d7-9765-a704171899a1',
         'Cache-Control': 'no-cache',
         Accept: '*/*',
@@ -103,12 +114,12 @@ router.get('/checkIfInList', (req, res, next) => {
 
     var options = {
       method: 'GET',
-      url: 'http://' + process.env.OTHER_DOMAIN + '/querylist/maskWithHolderKey',
+      url: 'http://' + domain + '/querylist/maskWithHolderKey',
       headers:
       {
         'cache-control': 'no-cache',
         Connection: 'keep-alive',
-        Host: process.env.OTHER_DOMAIN,
+        Host: domain,
         'Postman-Token': '46b7e7e1-a310-4a8e-9f9c-84adcb772599,49759aa3-1c34-4198-970e-ec60f594fbf6',
         'Cache-Control': 'no-cache',
         Accept: '*/*',
@@ -119,7 +130,7 @@ router.get('/checkIfInList', (req, res, next) => {
       body:
       {
         input: input,
-        key: oprf.encodePoint(key,encodeType),
+        key: oprf.encodePoint(key, encodeType),
         secret: secret
       },
       json: true
@@ -128,7 +139,7 @@ router.get('/checkIfInList', (req, res, next) => {
     request(options, function (error, response, maskedInput) {
       if (error) throw new Error(error);
 
-      options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata';
+      options.url = 'http://' + holderDomain + '/listholder/listdata';
       options.body = { 'secret': secret };
 
       request(options, function (error, response, tableData) {
@@ -138,7 +149,7 @@ router.get('/checkIfInList', (req, res, next) => {
         for (const [index, queryVal] of maskedInput.entries()) {
           for (let entry of tableData) {
 
-            if(entry === queryVal){
+            if (entry === queryVal) {
               unionIndexes.push(index);
               break;
             }
