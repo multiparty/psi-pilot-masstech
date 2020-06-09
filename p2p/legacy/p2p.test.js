@@ -2,8 +2,8 @@ require('dotenv').config()
 
 const listHolder = require('./list-holder');
 const querier = require('./querier');
-const dataGenerator = require('../utils/data-generator');
-const ingest = require('../utils/ingest');
+const dataGenerator = require('../../utils/data-generator');
+const ingest = require('../../utils/ingest');
 
 const fs = require('fs');
 const OPRF = require('oprf');

@@ -3,7 +3,7 @@ require('dotenv').config()
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
 const OPRF = require('oprf');
 const fs = require('fs');
-const ingest = require('../utils/ingest');
+const ingest = require('../../utils/ingest');
 
 const encodeType = 'ASCII';
 
