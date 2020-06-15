@@ -11,20 +11,60 @@ let domain = 'localhost:3000';
 let holderDomain = 'localhost:3000';
 const oprf = new OPRF();
 
-router.put('/setparams', (req, res, next) => {
-  encodeType = req.body.encodeType;
-  domain = req.body.domain;
-  holderDomain = req.body.holderDomain;
-
-  res.status(200).send("Encoding set to " + encodeType + ", domain set to " + domain + ", and holder domain set to " + holderDomain);
-});
-
 /**
  * @swagger
  * tags:
  *   name: Query List
  *   description: Extracting information from another list holder
  */
+
+/**
+ * @swagger
+ * path:
+ *  /querylist/setparams:
+ *    put:
+ *      summary: Changes the encode type, domain, and list holder domain being used
+ *      parameters:
+ *       - in: body
+ *         name: Query-Array
+ *         schema:
+ *           type: object
+ *           properties:
+ *             encodeType:
+ *               type: string
+ *               description: Whether to encode oprf values in 'ASCII' or 'UTF-8'
+ *             domain:
+ *               type: string
+ *               description: The querier's domain
+ *             holderDomain:
+ *               type: string
+ *               description: The domain of the list holder to be queried
+ *           example:
+ *             encodeType: "ASCII"
+ *             domain: "localhost:3000"
+ *             holderDomain: "localhost:8080"
+ *      responses:
+ *        "200":
+ *          description: Parameters were successfully updated
+ *          content:
+ *            text/plain:
+ *              schema:
+ *                type: string
+ *                example: "Encoding set to ASCII domain set to localhost:3000, and holder domain set to localhost:8080"
+ */
+router.put('/setParams', (req, res, next) => {
+  if (req.body.encodeType) {
+    encodeType = req.body.encodeType;
+  }
+  if (req.body.domain) {
+    domain = req.body.domain;
+  }
+  if (req.body.holderDomain) {
+    holderDomain = req.body.holderDomain;
+  }
+
+  res.status(200).send("Encoding set to " + encodeType + ", domain set to " + domain + ", and holder domain set to " + holderDomain);
+});
 
 /**
  * @swagger
@@ -86,11 +126,6 @@ router.get('/maskWithHolderKey', (req, res, next) => {
       return oprf.encodePoint(maskedValue, encodeType);
     });
 
-    console.log("Input: " + input);
-
-    console.log("Data: ");
-    console.log(data);
-
     var options = {
       method: 'GET',
       url: 'http://' + holderDomain + '/listholder/raiseToKey',
@@ -119,40 +154,6 @@ router.get('/maskWithHolderKey', (req, res, next) => {
         return oprf.encodePoint(oprf.unmaskPoint(oprf.decodePoint(entry, encodeType), key), encodeType);
       });
       res.status(200).send(result);
-    });
-  });
-});
-
-// Might not be necessary, easier to just use encoded stuff
-router.get('/getAndDecodeTable', async (req, res, next) => {
-  const secret = req.body.secret;
-
-  oprf.ready.then(function () {
-
-    var options = {
-      method: 'GET',
-      url: 'http://' + holderDomain + '/listholder/listdata',
-      headers:
-      {
-        'cache-control': 'no-cache',
-        Connection: 'keep-alive',
-        Host: holderDomain,
-        'Cache-Control': 'no-cache',
-        Accept: '*/*',
-        'Content-Type': 'application/json',
-      },
-      body: { secret: secret },
-      json: true
-    };
-
-    request(options, function (error, response, tableData) {
-      if (error) throw new Error(error);
-
-      const decodedTable = tableData.map(entry => {
-        return oprf.decodePoint(entry, encodeType);
-      });
-
-      res.send(decodedTable);
     });
   });
 });
