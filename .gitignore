@@ -108,3 +108,6 @@ generated-data.csv
 
 # Table data file for p2p implementation
 *.csv
+
+# Config files
+config/

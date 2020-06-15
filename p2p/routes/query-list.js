@@ -46,11 +46,9 @@ const oprf = new OPRF();
  *      responses:
  *        "200":
  *          description: Parameters were successfully updated
- *          content:
- *            text/plain:
- *              schema:
- *                type: string
- *                example: "Encoding set to ASCII domain set to localhost:3000, and holder domain set to localhost:8080"
+ *          schema:
+ *            type: string
+ *            example: "Encoding set to ASCII domain set to localhost:3000, and holder domain set to localhost:8080"
  */
 router.put('/setParams', (req, res, next) => {
   if (req.body.encodeType) {
@@ -94,25 +92,23 @@ router.put('/setParams', (req, res, next) => {
  *             secret:
  *               type: string
  *               description: Secret value shared between querier and list holder
+ *             display:
+ *               type: boolean
+ *               description: Whether or not to display the values sent to the list holder
  *           example:
  *             input: [ "748320512", "002381635", "129427809", ... ]
  *             key: "56423091200"
  *             secret: "23449023"
  *      responses:
  *        "200":
- *          description: Entries were successfully appended to the list
- *          content:
- *            application/json:
- *              schema:
- *               type: object
- *               properties:
- *                 result:
- *                   type: array
- *                   items:
- *                     type: string
- *                     description: values raised to both the querier's and holder's key
- *               example:
- *                 result: [ "2341231" ]
+ *          description: Values were masked by list holder
+ *          schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *             description: values raised to both the querier's and holder's key
+ *           example:
+ *             [ " rã\u0004\\ÉtÝè³\u000e¯nEu0018Å÷¹\tóv2£z\u0006«Ë?ì}", "¤vcÑ\u0017\u0014'ièèã1Q)Ë-jú{ÍµW§)Öà*\u0010", "ú9e\u001dJ=ÀÓJË3\u0005õ\n_Aí(Íib4\u000eÈNãx3", ... ]
  */
 router.get('/maskWithHolderKey', (req, res, next) => {
   const input = req.body.input;
@@ -145,6 +141,11 @@ router.get('/maskWithHolderKey', (req, res, next) => {
       },
       json: true
     };
+
+    if (req.body.display) {
+      console.log("Values being sent to list holder: ");
+      console.log(options.body.input);
+    }
 
     // send to list holder
     request(options, function (error, response, body) {
@@ -182,24 +183,23 @@ router.get('/maskWithHolderKey', (req, res, next) => {
  *             secret:
  *               type: string
  *               description: Secret value shared between querier and list holder
+ *             display:
+ *               type: boolean
+ *               description: Whether or not to display the values sent to the list holder
  *           example:
  *             input: [ "748320512", "002381635", "129427809", ... ]
  *             secret: "23449023"
+ *             display: true
  *      responses:
  *        "200":
- *          description: Entries were successfully appended to the list
- *          content:
- *            application/json:
- *              schema:
- *               type: object
- *               properties:
- *                 result:
- *                   type: array
- *                   items:
- *                     type: int
- *                     description: indexes of input values that were found in the other list
- *               example:
- *                 result: [ 9, 43, 210, 311 ]
+ *          description: Holder's list was successfully searched
+ *          schema:
+ *           type: array
+ *           items:
+ *             type: int
+ *             description: indexes of input values that were found in the other list
+ *           example:
+ *             [ 9, 43, 210, 311 ]
  */
 router.get('/checkIfInList', (req, res, next) => {
   const input = req.body.input;
@@ -225,7 +225,8 @@ router.get('/checkIfInList', (req, res, next) => {
       {
         input: input,
         key: oprf.encodePoint(key, encodeType),
-        secret: secret
+        secret: secret,
+        display: req.body.display
       },
       json: true
     };
@@ -256,6 +257,5 @@ router.get('/checkIfInList', (req, res, next) => {
 
   })
 });
-
 
 module.exports = router;

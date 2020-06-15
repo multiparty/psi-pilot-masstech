@@ -40,7 +40,8 @@ test('Table is of the proper size', done => {
   oprf.ready.then(function () {
     const dataSize = 100;
 
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/' + testFileName + '1';
+    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/';
+    options.body = { fileName: testFileName + '1' };
 
     // Change name of test file
     request(options, function (error, response, body) {
@@ -73,8 +74,8 @@ test('List holder writes a single entry properly', done => {
     const input = dataGenerator.generateData(1, true);
 
     options.method = 'PUT';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/' + testFileName + '2';
-
+    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/';
+    options.body = { fileName: testFileName + '2' };
     // Change name of test file
     request(options, function (error, response, body) {
       if (error) throw new Error(error);
@@ -107,13 +108,12 @@ test('List holder writes a single entry properly', done => {
 
 test('List holder writes many entries properly', done => {
   oprf.ready.then(function () {
-    // TODO: Error when over 905
-    const dataSize = 500;
+    const dataSize = 1000;
     const input = dataGenerator.generateData(dataSize, true);
 
     options.method = 'PUT';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/' + testFileName + '3';
-
+    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/';
+    options.body = { fileName: testFileName + '3' };
     // Change name of test file
     request(options, function (error, response, body) {
       if (error) throw new Error(error);
@@ -176,7 +176,7 @@ test('/listholder/raiseToKey returns error on wrong secret', done => {
 
 test('Proper value is returned from querylist/maskWithHolderKey', done => {
   return oprf.ready.then(async function () {
-    const dataSize = 500;
+    const dataSize = 1000;
     const queryKey = oprf.generateRandomScalar();
 
     let input = dataGenerator.generateData(dataSize, true);
@@ -198,7 +198,7 @@ test('Proper value is returned from querylist/maskWithHolderKey', done => {
 
 test('querylist/checkIfInList properly returns indexes of values in table', done => {
   return oprf.ready.then(async function () {
-    const dataSize = 500;
+    const dataSize = 1000;
     const queriesInTable = 12;
     const numberOfQueries = 100;
 
@@ -207,8 +207,8 @@ test('querylist/checkIfInList properly returns indexes of values in table', done
     let tableInput = dataGenerator.generateData(dataSize, true);
 
     options.method = 'PUT';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/' + testFileName + '4';
-
+    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/';
+    options.body = { fileName: testFileName + '4' };
     // Change name of test file
     request(options, function (error, response, body) {
       if (error) throw new Error(error);
