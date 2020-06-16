@@ -1,0 +1,6 @@
+{
+  "encode": "ASCII",
+  "port": 3000,
+  "domain": "localhost:3000",
+  "serverDomain": "localhost:3000"
+}

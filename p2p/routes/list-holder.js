@@ -38,7 +38,7 @@ const csvStringifier = createCsvStringifier({
  *           properties:
  *             fileName:
  *               type: string
- *               description: Name of the file to change to the active file without extension
+ *               description: Name of the file to change to the active file to without extension
  *             encodeType:
  *               type: string
  *               description: Whether to encode data being stored in 'ASCII' or 'UTF-8'
@@ -133,15 +133,11 @@ router.post('/singleUpdate', (req, res, next) => {
  *                 properties:
  *                   ssn:
  *                     type: string
- *                   name:
- *                     type: string
- *                   address:
- *                     type: string
  *             encodeType:
  *               type: string
  *               description: Whether to encode data being stored in 'ASCII' or 'UTF-8'
  *           example:
- *             input: [ { ssn: "123456789", name: "Billy Williamson", address: "123 Second St" }, { ssn: "123456790", name: "James Jameson", address: "124 Second St" } ]
+ *             input: [ { ssn: "123456789" }, { ssn: "123456790" }, ... ]
  *             encodeType: "ASCII"
  *      responses:
  *        "200":

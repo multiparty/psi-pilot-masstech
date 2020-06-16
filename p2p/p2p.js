@@ -83,7 +83,7 @@ if (args.client) {
     if (config.queryData) {
       queryData = config.queryData;
     } else {
-      queryData = dataGenerator.generateData(15, false).concat({ ssn: '468940680', name: "Ward, Lucille", address: "883 Hand Plaza, Reginastad, Georgia 66186-9508" });
+      queryData = dataGenerator.generateData(15, false);
     }
 
     const queryList = queryData.map(x => x.ssn);
@@ -153,8 +153,7 @@ if (args.client) {
   });
 
 } else {
-  const port = process.env.PORT;
-  app.listen(port, () => {
-    console.log("Listening on http://localhost:" + port);
+  app.listen(config.port, () => {
+    console.log("Listening on http://localhost:" + config.port);
   });
 }

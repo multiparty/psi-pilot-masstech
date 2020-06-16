@@ -106,7 +106,7 @@ router.put('/setParams', (req, res, next) => {
  *           type: array
  *           items:
  *             type: string
- *             description: values raised to both the querier's and holder's key
+ *             description: values raised to holder's key
  *           example:
  *             [ " rã\u0004\\ÉtÝè³\u000e¯nEu0018Å÷¹\tóv2£z\u0006«Ë?ì}", "¤vcÑ\u0017\u0014'ièèã1Q)Ë-jú{ÍµW§)Öà*\u0010", "ú9e\u001dJ=ÀÓJË3\u0005õ\n_Aí(Íib4\u000eÈNãx3", ... ]
  */

@@ -5,6 +5,7 @@ const dataGenerator = require('../utils/data-generator');
 const ingest = require('../utils/ingest');
 const fs = require('fs');
 const OPRF = require('oprf');
+const { describe } = require('yargs');
 
 const oprf = new OPRF();
 const holderKey = process.env.KEY;
