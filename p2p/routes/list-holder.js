@@ -6,7 +6,7 @@ const ingest = require('../../utils/ingest');
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
 
 const encodeType = 'ASCII';
-var fileName = 'table.csv'
+var fileName = 'table.csv';
 const oprf = new OPRF();
 const csvStringifier = createCsvStringifier({
   header: [

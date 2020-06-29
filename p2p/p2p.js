@@ -1,6 +1,6 @@
 require('dotenv').config()
 
-const request = require('request');
+const axios = require('axios');
 const express = require('express');
 const bodyParser = require('body-parser');
 const args = require('yargs').argv;
@@ -65,54 +65,59 @@ if (args.client) {
       Accept: '*/*',
       'Content-Type': 'application/json',
     },
-    body:
+    data:
     {
       encodeType: config.encode,
       domain: config.domain,
       holderDomain: config.serverDomain
     },
-    json: true
+    responseType: 'json'
   };
 
-  // Set params to proper values in query-list
-  request(options, function (error, response) {
-    if (error) throw new Error(error);
+  axios(options)
+    .then(function (response) {
 
-    let queryData = [];
+      let queryData = [];
 
-    if (config.queryData) {
-      queryData = config.queryData;
-    } else {
-      queryData = dataGenerator.generateData(15, false);
-    }
-
-    const queryList = queryData.map(x => x.ssn);
-
-    options.method = 'GET';
-    options.url = 'http://' + config.domain + '/querylist/checkIfInList';
-    options.body = { input: queryList, secret: process.env.SHARED, display: config.display };
-
-    request(options, function (error, response) {
-      if (error) throw new Error(error);
-
-      if (response.body.length > 0) {
-        console.log("\n\nIndividuals reported on list:\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-        response.body.map(index => {
-          if (queryData[index].name) console.log("Name: " + queryData[index].name);
-          if (queryData[index].name) console.log("Address: " + queryData[index].address);
-          console.log("SSN: " + queryData[index].ssn);
-          console.log("------------------------------------------------------------")
-        });
+      if (config.queryData) {
+        queryData = config.queryData;
       } else {
-        console.log("\n\nNone of the specified individuals were reported on that list.");
+        queryData = dataGenerator.generateData(15, false);
       }
 
+      const queryList = queryData.map(x => x.ssn);
+
+      options.method = 'GET';
+      options.url = 'http://' + config.domain + '/querylist/checkIfInList';
+      options.data = { input: queryList, secret: process.env.SHARED, display: config.display };
+
+      axios(options)
+        .then(function (response) {
+
+          if (response.data.length > 0) {
+            console.log("\n\nIndividuals reported on list:\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+            response.data.map(index => {
+              if (queryData[index].name) console.log("Name: " + queryData[index].name);
+              if (queryData[index].name) console.log("Address: " + queryData[index].address);
+              console.log("SSN: " + queryData[index].ssn);
+              console.log("------------------------------------------------------------")
+            });
+          } else {
+            console.log("\n\nNone of the specified individuals were reported on that list.");
+          }
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+
+    })
+    .catch(function (error) {
+      console.log(error);
     });
-  });
 
 } else if (args.server) {
   if (fs.existsSync('./table.csv')) fs.unlinkSync('./table.csv');
-  let dataSize = 500;
+  let dataSize = 1000;
   if (config.dataSize) {
     dataSize = config.dataSize;
   }
@@ -143,14 +148,17 @@ if (args.client) {
       Accept: '*/*',
       'Content-Type': 'application/json',
     },
-    body: { input: data },
-    json: true
+    data: { input: data },
+    responseType: 'json'
   };
 
-  request(options, function (error, response) {
-    if (error) throw new Error(error);
+  axios(options)
+    .then(function (response) {
 
-  });
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
 
 } else {
   app.listen(config.port, () => {

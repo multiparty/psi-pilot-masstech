@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const router = express.Router();
-const request = require('request');
+const axios = require('axios');
 const OPRF = require('oprf');
 
 // Set to ASCII encoding by default
@@ -134,28 +134,30 @@ router.get('/maskWithHolderKey', (req, res, next) => {
         Accept: '*/*',
         'Content-Type': 'application/json',
       },
-      body:
+      data:
       {
         input: data,
         secret: secret
       },
-      json: true
+      responseType: 'json'
     };
 
     if (req.body.display) {
       console.log("Values being sent to list holder: ");
-      console.log(options.body.input);
+      console.log(options.data.input);
     }
 
     // send to list holder
-    request(options, function (error, response, body) {
-      if (error) throw new Error(error);
-
-      const result = body.map(entry => {
-        return oprf.encodePoint(oprf.unmaskPoint(oprf.decodePoint(entry, encodeType), key), encodeType);
+    axios(options)
+      .then(function (response) {
+        const result = response.data.map(entry => {
+          return oprf.encodePoint(oprf.unmaskPoint(oprf.decodePoint(entry, encodeType), key), encodeType);
+        });
+        res.status(200).send(result);
+      })
+      .catch(function (error) {
+        console.log(error);
       });
-      res.status(200).send(result);
-    });
   });
 });
 
@@ -221,39 +223,43 @@ router.get('/checkIfInList', (req, res, next) => {
         Accept: '*/*',
         'Content-Type': 'application/json',
       },
-      body:
+      data:
       {
         input: input,
         key: oprf.encodePoint(key, encodeType),
         secret: secret,
         display: req.body.display
       },
-      json: true
+      responseType: 'json'
     };
 
-    request(options, function (error, response, maskedInput) {
-      if (error) throw new Error(error);
+    axios(options)
+      .then(function (maskedInput) {
+        options.url = 'http://' + holderDomain + '/listholder/listdata';
+        options.data = { 'secret': secret };
 
-      options.url = 'http://' + holderDomain + '/listholder/listdata';
-      options.body = { 'secret': secret };
+        axios(options)
+          .then(function (tableData) {
+            let unionIndexes = [];
+            for (const [index, queryVal] of maskedInput.data.entries()) {
+              for (let entry of tableData.data) {
 
-      request(options, function (error, response, tableData) {
-        if (error) throw new Error(error);
-
-        let unionIndexes = [];
-        for (const [index, queryVal] of maskedInput.entries()) {
-          for (let entry of tableData) {
-
-            if (entry === queryVal) {
-              unionIndexes.push(index);
-              break;
+                if (entry === queryVal) {
+                  unionIndexes.push(index);
+                  break;
+                }
+              }
             }
-          }
-        }
 
-        res.status(200).send(unionIndexes);
+            res.status(200).send(unionIndexes);
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
+      })
+      .catch(function (error) {
+        console.log(error);
       });
-    });
 
   })
 });
