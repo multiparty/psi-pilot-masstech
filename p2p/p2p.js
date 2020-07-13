@@ -44,51 +44,43 @@ const specs = swaggerJsdoc(swaggerOptions);
 app.use('/docs', swaggerUI.serve, swaggerUI.setup(specs));
 
 const listUpdateRoute = require('./routes/list-holder');
-app.use('/listholder', listUpdateRoute);
+app.use('/listholder', listUpdateRoute.router);
 
 const queryListRoute = require('./routes/query-list');
-app.use('/querylist', queryListRoute);
+app.use('/querylist', queryListRoute.router);
 
 if (args.client) {
   app.listen(config.port, () => {
     console.log("Running client mode on http://localhost:" + config.port);
   });
 
-  var options = {
+  let options = {
     'method': 'PUT',
-    'url': 'http://' + config.domain + '/querylist/setparams',
-    'headers': {
-      'cache-control': 'no-cache',
-      Connection: 'keep-alive',
-      Host: config.domain,
-      'Cache-Control': 'no-cache',
-      Accept: '*/*',
-      'Content-Type': 'application/json',
-    },
+    'url': config.protocol + '://localhost:' + config.port + '/querylist/setparams',
     data:
     {
-      encodeType: config.encode,
-      domain: config.domain,
+      encodeType: config.encodeType,
+      domain: 'localhost:' + config.port,
       holderDomain: config.serverDomain
     },
     responseType: 'json'
   };
 
+  let queryData = [];
+
+  if (config.queryData) {
+    queryData = config.queryData;
+  } else {
+    queryData = dataGenerator.generateData(15, false);
+  }
+
+  const queryList = queryData.map(x => x.ssn);
+
   axios(options)
     .then(function (response) {
 
-      let queryData = [];
-
-      if (config.queryData) {
-        queryData = config.queryData;
-      } else {
-        queryData = dataGenerator.generateData(15, false);
-      }
-
-      const queryList = queryData.map(x => x.ssn);
-
       options.method = 'GET';
-      options.url = 'http://' + config.domain + '/querylist/checkIfInList';
+      options.url = config.protocol + '://localhost:' + config.port + '/querylist/checkIfInList';
       options.data = { input: queryList, secret: process.env.SHARED, display: config.display };
 
       axios(options)
@@ -97,8 +89,13 @@ if (args.client) {
           if (response.data.length > 0) {
             console.log("\n\nIndividuals reported on list:\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
             response.data.map(index => {
-              if (queryData[index].name) console.log("Name: " + queryData[index].name);
-              if (queryData[index].name) console.log("Address: " + queryData[index].address);
+              if (queryData[index].name) {
+                console.log("Name: " + queryData[index].name);
+              }
+              if (queryData[index].address) {
+                console.log("Address: " + queryData[index].address);
+              }
+
               console.log("SSN: " + queryData[index].ssn);
               console.log("------------------------------------------------------------")
             });
@@ -116,11 +113,15 @@ if (args.client) {
     });
 
 } else if (args.server) {
-  if (fs.existsSync('./table.csv')) fs.unlinkSync('./table.csv');
+  if (fs.existsSync('./' + config.fileName)) {
+    fs.unlinkSync('./' + config.fileName);
+  }
+
   let dataSize = 1000;
   if (config.dataSize) {
     dataSize = config.dataSize;
   }
+
   app.listen(config.port, () => {
     console.log("Listening on http://localhost:" + config.port);
   });
@@ -136,18 +137,9 @@ if (args.client) {
     data = dataGenerator.generateSsnArray(dataSize, true);
   }
 
-  var options = {
+  let options = {
     method: 'POST',
-    url: 'http://' + config.domain + '/listholder/arrayUpdate',
-    headers:
-    {
-      'cache-control': 'no-cache',
-      Connection: 'keep-alive',
-      Host: config.domain,
-      'Cache-Control': 'no-cache',
-      Accept: '*/*',
-      'Content-Type': 'application/json',
-    },
+    url: config.protocol + '://localhost:' + config.port + '/listholder/arrayUpdate',
     data: { input: data },
     responseType: 'json'
   };
