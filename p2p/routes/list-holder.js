@@ -4,9 +4,10 @@ const OPRF = require('oprf');
 const fs = require('fs');
 const ingest = require('../../utils/ingest');
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
+const config = require('config');
 
-const encodeType = 'ASCII';
-var fileName = 'table.csv';
+const encodeType = config.encodeType;
+let fileName = config.fileName;
 const oprf = new OPRF();
 const csvStringifier = createCsvStringifier({
   header: [
@@ -22,150 +23,13 @@ const csvStringifier = createCsvStringifier({
  */
 
 /**
- * @swagger
- * path:
- *  /listholder/listname:
- *    put:
- *      summary: Change the active list file
- *      tags: [Update List]
- *      parameters:
- *       - in: body
- *         name: FileName-Update
- *         schema:
- *           type: object
- *           required:
- *            - fileName
- *           properties:
- *             fileName:
- *               type: string
- *               description: Name of the file to change to the active file to without extension
- *             encodeType:
- *               type: string
- *               description: Whether to encode data being stored in 'ASCII' or 'UTF-8'
- *           example:
- *             input: "test-table"
- *             encodeType: "ASCII"
- *      responses:
- *        "200":
- *          description: Active file was successfully changed
- *          schema:
- *            type: string
- *            example: "File changed to test-table successfully"
+ * Changes the active list being edited to newName
+ * @param  {String} newName - Name of file to begin writing to/reading from
  */
-router.put('/listname/', (req, res, next) => {
-  fileName = req.body.fileName + '.csv';
-  if (req.body.encodeType) encodeType = req.body.encodeType;
-
-  res.status(200).send("File changed to " + fileName + " successfully");
-});
-
-/**
- * @swagger
- * path:
- *  /listholder/singleUpdate:
- *    post:
- *      summary: Add a single entry to the private list
- *      tags: [Update List]
- *      parameters:
- *       - in: body
- *         name: Single-Update
- *         schema:
- *           type: object
- *           required:
- *            - input
- *           properties:
- *             input:
- *               type: string
- *               description: Value to be masked and appended to list
- *             encodeType:
- *               type: string
- *               description: Whether to encode data being stored in 'ASCII' or 'UTF-8'
- *           example:
- *             input: "123456789"
- *             encodeType: "ASCII"
- *      responses:
- *        "200":
- *          description: Input was successfully appended to the list
- */
-router.post('/singleUpdate', (req, res, next) => {
-  const input = req.body.input;
-  if (req.body.encodeType) encodeType = req.body.encodeType;
-
-  oprf.ready.then(function () {
-    const key = oprf.hashToPoint(process.env.KEY);
-
-    const maskedData = oprf.scalarMult(oprf.hashToPoint(input), key);
-    const encodedData = oprf.encodePoint(maskedData, encodeType);
-    const dataToWrite = [{ 'ssn': encodedData }];
-
-    let header = "";
-    if (!fs.existsSync(fileName)) {
-      header = csvStringifier.getHeaderString();
-    }
-
-    const body = csvStringifier.stringifyRecords(dataToWrite);
-    fs.appendFileSync(fileName, header + body);
-    res.status(200).send('Single entry successfully added!');
-  });
-});
-
-/**
- * @swagger
- * path:
- *  /listholder/objectUpdate:
- *    post:
- *      summary: Add many SSNs passed in objects to the list
- *      tags: [Update List]
- *      parameters:
- *       - in: body
- *         name: Object-Update
- *         schema:
- *           type: object
- *           required:
- *            - input
- *           properties:
- *             input:
- *               type: array
- *               items:
- *                 type: object
- *                 required:
- *                   - ssn
- *                 properties:
- *                   ssn:
- *                     type: string
- *             encodeType:
- *               type: string
- *               description: Whether to encode data being stored in 'ASCII' or 'UTF-8'
- *           example:
- *             input: [ { ssn: "123456789" }, { ssn: "123456790" }, ... ]
- *             encodeType: "ASCII"
- *      responses:
- *        "200":
- *          description: Entries were successfully appended to the list
- */
-router.post('/objectUpdate', (req, res, next) => {
-  const input = req.body.input;
-  if (req.body.encodeType) encodeType = req.body.encodeType;
-
-  oprf.ready.then(function () {
-    const key = oprf.hashToPoint(process.env.KEY);
-
-    const dataToWrite = input.map(entry => {
-      const maskedEntry = oprf.scalarMult(oprf.hashToPoint(entry.ssn), key);
-      const encodedEntry = oprf.encodePoint(maskedEntry, encodeType);
-      return { 'ssn': encodedEntry };
-    });
-
-    let header = "";
-    if (!fs.existsSync(fileName)) {
-      header = csvStringifier.getHeaderString();
-    }
-
-    const body = csvStringifier.stringifyRecords(dataToWrite);
-    fs.appendFileSync(fileName, header + body);
-    res.status(200).send('Complete!');
-  });
-});
+function changeListname (newName) {
+  fileName = newName;
+  return fileName;
+}
 
 /**
  * @swagger
@@ -202,7 +66,7 @@ router.post('/arrayUpdate', (req, res, next) => {
   if (req.body.encodeType) encodeType = req.body.encodeType;
 
   oprf.ready.then(function () {
-    const key = oprf.hashToPoint(process.env.KEY);
+    const key = oprf.decodePoint(process.env.KEY, encodeType);
 
     const dataToWrite = input.map(entry => {
       const maskedEntry = oprf.scalarMult(oprf.hashToPoint(entry), key);
@@ -274,7 +138,7 @@ router.get('/raiseToKey', (req, res, next) => {
   } else {
     const input = req.body.input;
     oprf.ready.then(function () {
-      const key = oprf.hashToPoint(process.env.KEY);
+      const key = oprf.decodePoint(process.env.KEY, encodeType);
 
       const data = input.map(entry => {
         const maskedValue = oprf.scalarMult(oprf.decodePoint(entry, encodeType), key);
@@ -333,4 +197,7 @@ router.get('/listdata', (req, res, next) => {
   }
 });
 
-module.exports = router;
+module.exports = {
+  router:router,
+  changeListname:changeListname
+}
