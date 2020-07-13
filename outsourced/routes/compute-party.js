@@ -5,14 +5,13 @@ const config = require('config');
 const fs = require('fs');
 const ingest = require('../../utils/ingest');
 const axios = require('axios');
-// const { crypto_sign_PUBLICKEYBYTES } = require('libsodium-wrappers');
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
 
 const encodeType = 'ASCII';
 const cpDomains = config.computePartyDomains;
 const key = config.key;
 let isComputing = false;
-var fileName = 'table.csv';
+var defaultFileName = 'table';
 const oprf = new OPRF();
 const csvStringifier = createCsvStringifier({
   header: [
@@ -29,6 +28,7 @@ router.get('/', (req, res, next) => {
 // Just raises value to its key and sends it back
 // Takes in encoded version of a point, decodes it, raises it, re-encodes it
 // optional encodeType
+// TODO: Make this take in lists instead of individual requests
 router.get('/raiseToKey', (req, res, next) => {
   const input = req.body.input;
   if (req.body.encodeType) encodeType = req.body.encodeType;
@@ -47,9 +47,13 @@ router.get('/raiseToKey', (req, res, next) => {
 // if no fileName sent, will not write
 // Always just responds with the end result
 // Needs to be told the other parties at some point
+// TODO: cannot handle multiple requests, put mutex around whole thing, possibly just use the unique set ids rather than a mutex
+// TODO: do I want requester to decide where it is stored?
+// TODO: key used for this set is unique to this set. should I store things in different tables?
 router.get('/computeFromShares', async (req, res, next) => {
   isComputing = true;
   const input = req.body.input;
+  const fileName = req.body.fileName;
   if (req.body.encodeType) encodeType = req.body.encodeType;
 
   await oprf.ready;
@@ -73,36 +77,21 @@ router.get('/computeFromShares', async (req, res, next) => {
 
   defaultOptions = JSON.stringify(defaultOptions);
 
-  console.log("\n\n\n\nNEW REQUEST:\n-------------------")
+  // console.log("\n\n\n\nNEW REQUEST:\n-------------------")
+
 
   let result = input;
-  console.log(result);
-  // await input.forEach(async (share, shareIndex) => {
+
   for (let [shareIndex, share] of input.entries()) {
-    console.log("Share Index: " + shareIndex);
-    console.log(shareIndex);
-    console.log(share);
-    console.log("----------");
     for (let [i, domain] of cpDomains.entries()) {
-      console.log("Go " + i);
+      // console.log("Go " + i);
       let option = JSON.parse(defaultOptions);
       option.url = 'http://' + domain + '/computeparty/raiseToKey';
       option.data.input = result[shareIndex];
       option.headers.Host = domain;
-      console.log("\n\n\n\nSending to ");
-      console.log(option.url);
-      console.log(option.data.input);
       await axios(option)
         .then(function (response) {
           result[shareIndex] = response.data;
-          console.log("\n\n\n\n");
-          console.log("Udpating result to");
-          console.log(result[shareIndex]);
-          console.log("Wait " + i);
-          // if (i === cpDomains.length - 1) {
-          //   console.log("+++++++++++++++++++++++\nSending: " + result);
-          //   res.status(200).json(result);
-          // }
         })
         .catch(function (error) {
           console.log(error);
@@ -112,7 +101,6 @@ router.get('/computeFromShares', async (req, res, next) => {
 
   currentShares = result;
   isComputing = false;
-  // res.status(200).json(result);
 
   // Now collect shares from all of the other compute parties
   let options = [];
@@ -140,10 +128,10 @@ router.get('/computeFromShares', async (req, res, next) => {
         // response.data is a list of the masked shares that each party had
         // they now need to be summed to get the final product
         response.data.forEach((value, shareIndex) => {
-          console.log("\n\n\n\n\nAdding");
-          console.log(currentData[shareIndex]);
-          console.log("\n\n\nto");
-          console.log(oprf.decodePoint(value, encodeType));
+          // console.log("\n\n\n\n\nAdding");
+          // console.log(currentData[shareIndex]);
+          // console.log("\n\n\nto");
+          // console.log(oprf.decodePoint(value, encodeType));
           currentData[shareIndex] = oprf.sodium.crypto_core_ristretto255_add(currentData[shareIndex], oprf.decodePoint(value, encodeType));
         });
       });
@@ -151,6 +139,25 @@ router.get('/computeFromShares', async (req, res, next) => {
       currentData = currentData.map(value => {
         return oprf.encodePoint(value, encodeType);
       });
+
+      if (fileName) {
+        const dataToWrite = currentData.map(entry => {
+          return { 'ssn' : entry };
+        });
+
+        let header = "";
+        if (!fs.existsSync(fileName + '.csv')) {
+          header = csvStringifier.getHeaderString();
+        }
+
+        const body = csvStringifier.stringifyRecords(dataToWrite);
+        console.log("\n\n\nBody:");
+        console.log(body);
+        fs.appendFileSync(fileName + '.csv', header + body);
+      }
+
+      console.log("\n\n\nReturn");
+      console.log(currentData);
 
       // Properly sends back the data, summed together and masked by all keys
       res.status(200).json(currentData);
@@ -160,14 +167,12 @@ router.get('/computeFromShares', async (req, res, next) => {
     });
 });
 
-
-
 // May want to use a semaphore or something for while it is computing its shares?
 // Probably better to switch to a semaphore rather than a flag to handle multiple incoming requests
 router.get('/getComputedShares', (req, res, next) => {
   function waitForCompute() {
     if (isComputing) {
-      console.log("Checking isComputing");
+      // console.log("Checking isComputing");
       setTimeout(waitForCompute, 100);
     } else {
       res.status(200).json(currentShares);
@@ -177,6 +182,16 @@ router.get('/getComputedShares', (req, res, next) => {
   waitForCompute();
 });
 
+// should get a shared secret, showing they're an approved querier
+// TODO: Decide whether to have an active file or not
+router.get('/listData', (req, res, next) => {
+  // Check if secret is the same
+  const tableData = ingest.readCsv(req.body.fileName);
+  const result = tableData.map(entry => {
+    return entry.ssn;
+  });
 
+  res.status(200).json(result);
+});
 
 module.exports = router;

@@ -8,7 +8,7 @@ const dataGenerator = require('../utils/data-generator');
 const ingest = require('../utils/ingest');
 const fs = require('fs');
 const OPRF = require('oprf');
-const { describe } = require('yargs');
+const args = require('yargs');
 
 const oprf = new OPRF();
 const holderKey = process.env.KEY;
@@ -29,12 +29,9 @@ var options = {
     'cache-control': 'no-cache',
     Connection: 'keep-alive',
     Host: process.env.OTHER_DOMAIN,
-    'Postman-Token': 'f9f97789-280b-4d17-85a2-7b520ece8a52,1512912b-6a13-4abd-8235-99cdc1b62ee8',
     'Cache-Control': 'no-cache',
     Accept: '*/*',
-    'User-Agent': 'PostmanRuntime/7.20.1',
-    'Content-Type': 'application/json',
-    Authorization: 'Bearer 6AQnIyMC6jUeNkE4eGvqW7BSOpdLrEvp4bIgmmsN_3Vgc8tABwNQ9QHmsMavZ5Z9ZWzgoLrx30tCEXxZyLFxtbUZlBmSFrYWxhOZspIXByZJoCC-geQi1fkAXCCuXXYx'
+    'Content-Type': 'application/json'
   },
   data: { input: [{}] },
   responseType: 'json'

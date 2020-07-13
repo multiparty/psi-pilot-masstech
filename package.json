@@ -26,6 +26,7 @@
     "fakerator": "^0.3.1",
     "libsodium-wrappers": "^0.7.6",
     "oprf": "^2.0.0",
+    "semaphore": "^1.1.0",
     "swagger-jsdoc": "^4.0.0",
     "swagger-ui-express": "^4.1.4",
     "yargs": "^15.3.1"

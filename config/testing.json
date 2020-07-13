@@ -1,11 +1,13 @@
 {
   "encodeType": "ASCII",
-  "port": 3000,
-  "domain": "localhost:3000",
-  "serverDomain": "localhost:3000",
   "computePartyDomains": [
     "localhost:8000",
     "localhost:8001",
     "localhost:8002"
+  ],
+  "computePartyKeys": [
+    "94302825",
+    "78456342",
+    "43542187"
   ]
 }
