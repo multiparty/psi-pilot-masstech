@@ -45,6 +45,13 @@ async function maskWithHolderKey(input, key, secret) {
     responseType: 'json'
   };
 
+  if(config.display) {
+    console.log("--------------------------------");
+    console.log("Data being sent to list holder: ");
+    console.log(data);
+    console.log("--------------------------------");
+  }
+
   // send to list holder
   return axios(options)
     .then(function (response) {
@@ -83,13 +90,9 @@ async function maskWithHolderKey(input, key, secret) {
  *             secret:
  *               type: string
  *               description: Secret value shared between querier and list holder
- *             display:
- *               type: boolean
- *               description: Whether or not to display the values sent to the list holder
  *           example:
  *             input: [ "748320512", "002381635", "129427809", ... ]
  *             secret: "23449023"
- *             display: true
  *      responses:
  *        "200":
  *          description: Holder's list was successfully searched
@@ -109,7 +112,7 @@ router.get('/checkIfInList', (req, res, next) => {
 
     const key = oprf.generateRandomScalar();
 
-    const maskedInput = await maskWithHolderKey(input, oprf.encodePoint(key, encodeType), secret, req.body.display);
+    const maskedInput = await maskWithHolderKey(input, oprf.encodePoint(key, encodeType), secret);
 
     // axios(options)
     // .then(function (maskedInput) {

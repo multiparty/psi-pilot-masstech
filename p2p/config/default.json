@@ -2,6 +2,10 @@
   "protocol": "http",
   "encodeType": "ASCII",
   "port": "3000",
+  "serverDomain": "localhost:3000",
+  "fileName": "table.csv",
+  "display": false,
+  "dataSize": 1000,
   "queryData": [
     {
       "ssn": "912622018",
@@ -54,6 +58,11 @@
       "address": "64671 Angelo Trail Suite 168, Fredachester, Wisconsin 38579-9459"
     }
   ],
-  "serverDomain": "localhost:3000",
-  "fileName": "table.csv"
+  "tableData": [
+    "490051413",
+    "446223036",
+    "641239277",
+    "197573585",
+    "768558506"
+  ]
 }
