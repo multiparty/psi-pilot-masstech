@@ -7,8 +7,8 @@ const fs = require('fs');
  * @param  {string} filePath - path to csv file that needs to be read
  * @returns {object[]} array of objects that contain data parsed from the csv file
  */
-function readCsv(filePath) {
-  const file = fs.readFileSync(filePath);
+function readCsv(filePath, encoding='utf-8') {
+  const file = fs.readFileSync(filePath, encoding);
 
   const data = csvParser(file, {
     columns: true,
