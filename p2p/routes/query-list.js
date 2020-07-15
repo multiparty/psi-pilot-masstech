@@ -36,7 +36,7 @@ async function maskWithHolderKey(input, key, secret) {
 
   const options = {
     method: 'GET',
-    url: config.protocol + '://' + holderDomain + '/listholder/raiseToKey',
+    url: holderDomain + '/listholder/raiseToKey',
     data:
     {
       input: data,
@@ -114,11 +114,9 @@ router.get('/checkIfInList', (req, res, next) => {
 
     const maskedInput = await maskWithHolderKey(input, oprf.encodePoint(key, encodeType), secret);
 
-    // axios(options)
-    // .then(function (maskedInput) {
     let options = {
       method: 'GET',
-      url: config.protocol + '://' + holderDomain + '/listholder/listdata',
+      url: holderDomain + '/listholder/listdata',
       data: { 'secret': secret },
       responseType: 'json'
     };

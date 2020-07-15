@@ -1,8 +1,7 @@
 {
-  "protocol": "http",
   "encodeType": "ASCII",
   "port": "3000",
-  "serverDomain": "localhost:3000",
+  "serverDomain": "http://localhost:3000",
   "fileName": "table.csv",
   "display": false,
   "dataSize": 1000,

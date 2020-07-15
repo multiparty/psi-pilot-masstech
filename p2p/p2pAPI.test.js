@@ -15,45 +15,50 @@ const { describe } = require('yargs');
 const oprf = new OPRF();
 const holderKey = process.env.KEY;
 const encodeType = config.encodeType;
+const serverDomain = config.serverDomain;
 
 const testFileName = config.fileName;
 
 let options = {
   method: 'PUT',
-  url: 'http://' + process.env.OTHER_DOMAIN,
+  url: serverDomain,
   data: { input: [{}] },
   responseType: 'json'
 };
 
-if(fs.existsSync('./p2p/' + testFileName)) {
+// Make sure you are starting with a blank file
+if (fs.existsSync('./p2p/' + testFileName)) {
   fs.unlinkSync('./p2p/' + testFileName);
 }
 
 test('Table is of the proper size', done => {
-  oprf.ready.then(function () {
+  oprf.ready.then(async function () {
     const dataSize = 100;
 
     const input = dataGenerator.generateSsnArray(dataSize);
 
     options.method = 'POST';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/arrayUpdate';
+    options.url = serverDomain + '/listholder/arrayUpdate';
     options.data = { input: input };
 
-    axios(options)
+    // Insert input into the table
+    await axios(options)
       .then(function (response) {
-        options.method = 'GET';
-        options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata';
-        options.data = { secret: process.env.SHARED };
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
 
-        axios(options)
-          .then(function (tableData) {
-            expect(tableData.data.length).toBe(dataSize);
-            fs.unlinkSync('./p2p/' + testFileName);
-            done();
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
+    options.method = 'GET';
+    options.url = serverDomain + '/listholder/listdata';
+    options.data = { secret: process.env.SHARED };
+
+    // Get the contents of the table
+    axios(options)
+      .then(function (tableData) {
+        expect(tableData.data.length).toBe(dataSize);
+        fs.unlinkSync('./p2p/' + testFileName);
+        done();
       })
       .catch(function (error) {
         console.log(error);
@@ -62,36 +67,38 @@ test('Table is of the proper size', done => {
 });
 
 test('List holder writes many entries properly', done => {
-  oprf.ready.then(function () {
+  oprf.ready.then(async function () {
     const dataSize = 1000;
     const input = dataGenerator.generateSsnArray(dataSize);
 
     options.method = 'POST';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/arrayUpdate';
+    options.url = serverDomain + '/listholder/arrayUpdate';
     options.data = { input: input };
 
-    axios(options)
+    // Insert input into the table
+    await axios(options)
       .then(function (response) {
-        options.method = 'GET';
-        options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata';
-        options.data = { secret: process.env.SHARED };
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
 
-        // Get the contents of the table
-        axios(options)
-          .then(function (tableData) {
-            const hashedKey = oprf.decodePoint(holderKey, encodeType);
+    options.method = 'GET';
+    options.url = serverDomain + '/listholder/listdata';
+    options.data = { secret: process.env.SHARED };
 
-            const hashedInput = input.map(entry => {
-              return oprf.encodePoint(oprf.scalarMult(oprf.hashToPoint(entry), hashedKey), encodeType);
-            });
+    // Get the contents of the table
+    axios(options)
+      .then(function (tableData) {
+        const hashedKey = oprf.decodePoint(holderKey, encodeType);
 
-            expect(hashedInput).toEqual(tableData.data);
-            fs.unlinkSync('./p2p/' + testFileName);
-            done();
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
+        const hashedInput = input.map(entry => {
+          return oprf.encodePoint(oprf.scalarMult(oprf.hashToPoint(entry), hashedKey), encodeType);
+        });
+
+        expect(hashedInput).toEqual(tableData.data);
+        fs.unlinkSync('./p2p/' + testFileName);
+        done();
       })
       .catch(function (error) {
         console.log(error);
@@ -102,7 +109,7 @@ test('List holder writes many entries properly', done => {
 
 test('/listholder/listdata returns error on wrong secret', done => {
   options.method = 'GET';
-  options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata';
+  options.url = serverDomain + '/listholder/listdata';
   options.data = { secret: 'wrong secret' };
 
   axios(options)
@@ -118,7 +125,7 @@ test('/listholder/listdata returns error on wrong secret', done => {
 
 test('/listholder/raiseToKey returns error on wrong secret', done => {
   options.method = 'GET';
-  options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/raiseToKey';
+  options.url = serverDomain + '/listholder/raiseToKey';
   options.data = { input: ['1234'], secret: 'wrong secret' };
 
   axios(options)
@@ -159,11 +166,8 @@ test('querylist/checkIfInList properly returns indexes of values in table', done
 
     const queryKey = oprf.generateRandomScalar();
 
+    // Choose which values put into the table should be successfully found
     let tableInput = dataGenerator.generateSsnArray(dataSize);
-
-    options.method = 'POST';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/arrayUpdate';
-    options.data = { input: tableInput };
 
     let containedQueries = [];
     for (let i = 0; i < queriesInTable; i++) {
@@ -192,23 +196,28 @@ test('querylist/checkIfInList properly returns indexes of values in table', done
       queryList.push(containedQueries[i]);
     }
 
-    axios(options)
+    options.method = 'POST';
+    options.url = serverDomain + '/listholder/arrayUpdate';
+    options.data = { input: tableInput };
+
+    // Create a list for the data in tableInput
+    await axios(options)
       .then(function (response) {
-        // Choose which values put into the table should be successfully found
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
 
-        options.method = 'GET';
-        options.url = 'http://localhost:' + process.env.PORT + '/querylist/checkIfInList/';
-        options.data = { input: queryList, secret: process.env.SHARED };
+    options.method = 'GET';
+    options.url = 'http://localhost:' + process.env.PORT + '/querylist/checkIfInList/';
+    options.data = { input: queryList, secret: process.env.SHARED };
 
-        axios(options)
-          .then(function (result) {
-            expect(result.data).toEqual(containedIndexes);
-            fs.unlinkSync('./p2p/' + testFileName);
-            done();
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
+    // Call the client-side API to do a search of the table
+    axios(options)
+      .then(function (result) {
+        expect(result.data).toEqual(containedIndexes);
+        fs.unlinkSync('./p2p/' + testFileName);
+        done();
       })
       .catch(function (error) {
         console.log(error);

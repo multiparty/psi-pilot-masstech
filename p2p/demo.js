@@ -19,7 +19,7 @@ function searchForEntries(queryData) {
 
   let options = {
     'method': 'GET',
-    'url': config.protocol + '://localhost:' + config.port + '/querylist/checkIfInList',
+    'url': 'http://localhost:' + config.port + '/querylist/checkIfInList',
     data:
       { input: queryList, secret: process.env.SHARED },
     responseType: 'json'
@@ -70,7 +70,7 @@ function createNewList(dataSize) {
 
   let options = {
     method: 'POST',
-    url: config.protocol + '://localhost:' + config.port + '/listholder/arrayUpdate',
+    url: 'http://localhost:' + config.port + '/listholder/arrayUpdate',
     data: { input: data },
     responseType: 'json'
   };
