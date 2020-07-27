@@ -1,0 +1,67 @@
+{
+  "encodeType": "ASCII",
+  "port": "3000",
+  "serverDomain": "http://localhost:3000",
+  "fileName": "table.csv",
+  "display": false,
+  "dataSize": 1000,
+  "queryData": [
+    {
+      "ssn": "912622018",
+      "name": "Bechtelar, Jill",
+      "address": "3946 Tracey Ferry, Port Alexandra, Alabama 87769-6140"
+    },
+    {
+      "ssn": "768558506",
+      "name": "Tremblay, Damon",
+      "address": "107 O'Keefe Wells Apt. 978, Guyborough, Wyoming 91311"
+    },
+    {
+      "ssn": "490051413",
+      "name": "Bins, Rosa",
+      "address": "73159 Weber Dale, Port Ruthport, South Dakota 50371"
+    },
+    {
+      "ssn": "224277351",
+      "name": "Rogahn, Naomi",
+      "address": "4264 Gislason Lakes, Lake Kirkchester, Alabama 63736-7230"
+    },
+    {
+      "ssn": "641239277",
+      "name": "Flatley, Marta",
+      "address": "884 Stacey Lake Suite 569, East Susiefurt, Minnesota 37240-5956"
+    },
+    {
+      "ssn": "056734965",
+      "name": "Yundt, Kari",
+      "address": "4432 Rosa Fall, Zboncakberg, South Dakota 86354"
+    },
+    {
+      "ssn": "238691131",
+      "name": "Osinski, Elizabeth",
+      "address": "51809 Mohr Lake, Lake Darrel, Texas 43064"
+    },
+    {
+      "ssn": "446223036",
+      "name": "Mueller, Ida",
+      "address": "41261 Abel Ways Suite 756, Fadelton, Kentucky 79205-9279"
+    },
+    {
+      "ssn": "199021716",
+      "name": "Wintheiser, Sonja",
+      "address": "1938 Kautzer Union, New Shari, Alabama 89164"
+    },
+    {
+      "ssn": "197573585",
+      "name": "Little, Jimmie",
+      "address": "64671 Angelo Trail Suite 168, Fredachester, Wisconsin 38579-9459"
+    }
+  ],
+  "tableData": [
+    "490051413",
+    "446223036",
+    "641239277",
+    "197573585",
+    "768558506"
+  ]
+}

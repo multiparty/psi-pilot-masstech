@@ -5,15 +5,6 @@ const fs = require('fs');
 const Fakerator = require("fakerator");
 const fakerator = Fakerator();
 
-// Set parameters of CSV writer, should add new header for each data type
-const csvStringifier = createCsvStringifier({
-  header: [
-    { id: 'ssn', title: 'SSN' },
-    { id: 'name', title: 'Name' },
-    { id: 'address', title: 'Address' },
-  ]
-});
-
 
 /**
  * Generates a list of random data entries which can be output to a csv file
@@ -23,6 +14,15 @@ const csvStringifier = createCsvStringifier({
  */
 function generateData(num, writeToFile) {
   let data = [];
+
+  // Set parameters of CSV writer, should add new header for each data type
+  const csvStringifier = createCsvStringifier({
+    header: [
+      { id: 'ssn', title: 'SSN' },
+      { id: 'name', title: 'Name' },
+      { id: 'address', title: 'Address' },
+    ]
+  });
 
   for (let i = 0; i < num; i++) {
     const ssn = generateSSN();
@@ -49,6 +49,13 @@ function generateData(num, writeToFile) {
 function generateSsnData(num, writeToFile) {
   let data = [];
 
+  // Set parameters of CSV writer, should add new header for each data type
+  const csvStringifier = createCsvStringifier({
+    header: [
+      { id: 'ssn', title: 'SSN' },
+    ]
+  });
+
   for (let i = 0; i < num; i++) {
     const ssn = generateSSN();
     data.push({ ssn: ssn });
@@ -58,6 +65,21 @@ function generateSsnData(num, writeToFile) {
     const header = csvStringifier.getHeaderString();
     const body = csvStringifier.stringifyRecords(data);
     fs.writeFileSync('generated-data.csv', header + body);
+  }
+
+  return data;
+}
+
+/**
+ * Randomly generates a list of SSNs
+ * @param  {int} num - number of SSNs to be generated
+ * @returns {string[]} list of randomly generated SSNs
+ */
+function generateSsnArray(num) {
+  let data = [];
+
+  for (let i = 0; i < num; i++) {
+    data.push(generateSSN());
   }
 
   return data;
@@ -105,3 +127,4 @@ function generateAddress() {
 
 exports.generateData = generateData;
 exports.generateSsnData = generateSsnData;
+exports.generateSsnArray = generateSsnArray;

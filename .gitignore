@@ -107,4 +107,11 @@ dist
 generated-data.csv
 
 # Table data file for p2p implementation
-table.txt
+*.csv
+
+config/*
+# Config files
+p2p/config/*
+!p2p/config/default.json
+outsourced/config/*
+!outsourced/config/default.json
