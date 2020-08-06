@@ -47,7 +47,7 @@ app.use('/docs', swaggerUI.serve, swaggerUI.setup(specs));
 // app.use('/querylist', queryListRoute);
 
 const computePartyRoute = require('./routes/compute-party');
-app.use('/computeparty', computePartyRoute);
+app.use('/computeparty', computePartyRoute.router);
 
 app.listen(config.port, () => {
   console.log("Listening on http://localhost:" + config.port);

@@ -61,13 +61,6 @@ async function computeAndSendShares(input, parties) {
   var defaultOptions = {
     'method': 'GET',
     'url': 'http://localhost:3000',
-    'headers': {
-      'cache-control': 'no-cache',
-      Connection: 'keep-alive',
-      Host: 'localhost:3000',
-      'Cache-Control': 'no-cache',
-      'Content-Type': 'application/json',
-    },
     data:
     {
       identifier: shareIdentifier
@@ -80,10 +73,10 @@ async function computeAndSendShares(input, parties) {
 
   parties.forEach((domain, i) => {
     const option = JSON.parse(defaultOptions);
-    option.url = "http://" + domain + "/computeparty/computeFromShares";
+    option.url = domain + "/computeparty/computeFromShares";
     option.domain = domain;
     option.data.input = shares[i];
-    option.data.fileName = 'table' + i;
+    option.data.creatorDomain = "http://localhost:3000"
     options.push(option);
   });
 
@@ -91,34 +84,46 @@ async function computeAndSendShares(input, parties) {
     return axios(option);
   });
 
-  axios.all(requests)
+  const results = await axios.all(requests)
     .then(axios.spread((...responses) => {
 
-      const share1 = oprf.scalarMult(oprf.scalarMult(oprf.scalarMult(oprf.decodePoint(shares[0][0], encodeType), oprf.hashToPoint("94302825")), oprf.hashToPoint("78456342")), oprf.hashToPoint("43542187"));
-      const share2 = oprf.scalarMult(oprf.scalarMult(oprf.scalarMult(oprf.decodePoint(shares[1][0], encodeType), oprf.hashToPoint("94302825")), oprf.hashToPoint("78456342")), oprf.hashToPoint("43542187"));
-      const share3 = oprf.scalarMult(oprf.scalarMult(oprf.scalarMult(oprf.decodePoint(shares[2][0], encodeType), oprf.hashToPoint("94302825")), oprf.hashToPoint("78456342")), oprf.hashToPoint("43542187"));
-      const finalVal = oprf.sodium.crypto_core_ristretto255_add(oprf.sodium.crypto_core_ristretto255_add(share1, share2), share3);
-      console.log("\n\n\nAnswer for value " + 0);
-      console.log(oprf.encodePoint(finalVal, encodeType));
-      console.log("\n\nResponses for value " + 0);
+      // const share1 = oprf.scalarMult(oprf.scalarMult(oprf.scalarMult(oprf.decodePoint(shares[0][0], encodeType), oprf.hashToPoint("94302825")), oprf.hashToPoint("78456342")), oprf.hashToPoint("43542187"));
+      // const share2 = oprf.scalarMult(oprf.scalarMult(oprf.scalarMult(oprf.decodePoint(shares[1][0], encodeType), oprf.hashToPoint("94302825")), oprf.hashToPoint("78456342")), oprf.hashToPoint("43542187"));
+      // const share3 = oprf.scalarMult(oprf.scalarMult(oprf.scalarMult(oprf.decodePoint(shares[2][0], encodeType), oprf.hashToPoint("94302825")), oprf.hashToPoint("78456342")), oprf.hashToPoint("43542187"));
+      // const finalVal = oprf.sodium.crypto_core_ristretto255_add(oprf.sodium.crypto_core_ristretto255_add(share1, share2), share3);
+      // console.log("\n\nShare 1");
+      // console.log(share1);
+      // console.log("Share 2");
+      // console.log(share2);
+      // console.log("Share 3");
+      // console.log(share3);
+      // console.log("\n\n\nAnswer for value " + 0);
+      // console.log(oprf.encodePoint(finalVal, encodeType));
+      // console.log("\n\nResponses for value " + 0);
       // console.log(oprf.decodePoint(responses[0].data[0], encodeType));
       // console.log(oprf.decodePoint(responses[1].data[0], encodeType));
       // console.log(oprf.decodePoint(responses[2].data[0], encodeType));
-      console.log(responses[0].data[0]);
-      console.log(responses[1].data[0]);
-      console.log(responses[2].data[0]);
+      // console.log(responses[0].data[0]);
+      // console.log(responses[1].data[0]);
+      // console.log(responses[2].data[0]);
+      const data = responses.map(response => {
+        return response.data;
+      });
+
+      return data;
     }))
     .catch(function (error) {
       console.log(error);
     });
 
-  return shares;
+
+  return { "shares": shares, "results": results };
 }
 
-(async () => {
-  await oprf.ready;
-  const cpDomains = ["localhost:8000", "localhost:8001", "localhost:8002"];
-  const res = await computeAndSendShares(dataGenerator.generateSsnArray(10), cpDomains);
-})();
+// (async () => {
+//   await oprf.ready;
+//   const cpDomains = ["http://localhost:8000", "http://localhost:8001", "http://localhost:8002"];
+//   const res = await computeAndSendShares(dataGenerator.generateSsnArray(2), cpDomains);
+// })();
 
 module.exports.computeAndSendShares = computeAndSendShares;

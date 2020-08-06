@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 const OPRF = require('oprf');
@@ -5,40 +6,82 @@ const config = require('config');
 const fs = require('fs');
 const ingest = require('../../utils/ingest');
 const axios = require('axios');
+const args = require('yargs').argv;
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
 
-const encodeType = 'ASCII';
+const encodeType = config.encodeType;
+var defaultFileName = config.fileName;
 const cpDomains = config.computePartyDomains;
-const key = config.key;
-let isComputing = false;
-var defaultFileName = 'table';
+const creatorDomains = config.creatorDomains;
+// One key is needed for every list creator
+let keys = [];
 const oprf = new OPRF();
+oprf.ready.then(() => {
+  if (args.test) {
+    keys = creatorDomains.map(creatorDomain => {
+      return oprf.hashToPoint(config.testKeys.pop());
+    });
+  } else {
+    keys = creatorDomains.map(creatorDomain => {
+      return oprf.generateRandomScalar();
+    });
+  }
+});
+
 const csvStringifier = createCsvStringifier({
   header: [
     { id: 'ssn', title: 'SSN' },
   ]
 });
 let currentShares = [];
-let currentData = [];
+let cpShares = [];
 
-router.get('/', (req, res, next) => {
-  res.status(200).send("Hellow World");
-});
+function resetCPShares() {
+  cpShares = cpDomains.map(domain => {
+    return -1;
+  });
+}
+
+resetCPShares();
 
 // Just raises value to its key and sends it back
 // Takes in encoded version of a point, decodes it, raises it, re-encodes it
 // optional encodeType
-// TODO: Make this take in lists instead of individual requests
+// Input is a list of values to be raised to this CP's key
+// Also requires the list creator's ID (for now just using domain);
+// check if -1 not in the list, if not, then the key is not fresh
+// this works because if you've gotten everyone's shares, no one should need your key anymore
 router.get('/raiseToKey', (req, res, next) => {
   const input = req.body.input;
-  if (req.body.encodeType) encodeType = req.body.encodeType;
-  oprf.ready.then(function () {
-    const decodedInput = oprf.decodePoint(input, encodeType);
-    result = oprf.scalarMult(decodedInput, oprf.hashToPoint(key));
-    result = oprf.encodePoint(result, encodeType);
+  const creatorDomain = req.body.creatorDomain;
 
-    res.status(200).json(result);
-  });
+  if (req.body.encodeType) encodeType = req.body.encodeType;
+
+  function waitForFreshKey() {
+    if (!cpShares.includes(-1)) {
+      setTimeout(waitForFreshKey, 100);
+    } else {
+      const keyIndex = creatorDomains.indexOf(creatorDomain);
+
+      // Key was not found for specified creatorDomain
+      if (keyIndex == -1) {
+        console.log("Key not found error!");
+        res.status(400).send("Invalid creator domain sent in request.  No key listed for creator domain " + creatorDomain + ".");
+      }
+
+      oprf.ready.then(function () {
+        const key = keys[keyIndex];
+        const result = input.map(entry => {
+          const decodedInput = oprf.decodePoint(entry, encodeType);
+          return oprf.encodePoint(oprf.scalarMult(decodedInput, key), encodeType)
+        });
+
+        res.status(200).json(result);
+      });
+    }
+  }
+
+  waitForFreshKey();
 });
 
 // Method: Each party sends their share to each other party
@@ -50,24 +93,29 @@ router.get('/raiseToKey', (req, res, next) => {
 // TODO: cannot handle multiple requests, put mutex around whole thing, possibly just use the unique set ids rather than a mutex
 // TODO: do I want requester to decide where it is stored?
 // TODO: key used for this set is unique to this set. should I store things in different tables?
+// Different creators' data will be stored in different tables and you have to decode, randomize, and recode everything when a new set from the same source comes in
+// need to be sent the creator's identifier
+// Always writes to a file
 router.get('/computeFromShares', async (req, res, next) => {
-  isComputing = true;
-  const input = req.body.input;
-  const fileName = req.body.fileName;
-  if (req.body.encodeType) encodeType = req.body.encodeType;
-
   await oprf.ready;
+
+  const creatorDomain = req.body.creatorDomain;
+  if (args.test) {
+    keys[creatorDomains.indexOf(creatorDomain)] = oprf.hashToPoint(config.testKeys.pop());
+  } else {
+    keys[creatorDomains.indexOf(creatorDomain)] = oprf.generateRandomScalar();
+  }
+
+  resetCPShares();
+  // TODO: race with new keys newKey = true;
+  // Solved by checking if -1 is in the list
+
+  const input = req.body.input;
+  if (req.body.encodeType) encodeType = req.body.encodeType;
 
   var defaultOptions = {
     'method': 'GET',
     'url': 'http://localhost:3000',
-    'headers': {
-      'cache-control': 'no-cache',
-      Connection: 'keep-alive',
-      Host: 'localhost:3000',
-      'Cache-Control': 'no-cache',
-      'Content-Type': 'application/json',
-    },
     data:
     {
       input: input[0]
@@ -77,27 +125,21 @@ router.get('/computeFromShares', async (req, res, next) => {
 
   defaultOptions = JSON.stringify(defaultOptions);
 
-  // console.log("\n\n\n\nNEW REQUEST:\n-------------------")
-
-
   let result = input;
 
-  for (let [shareIndex, share] of input.entries()) {
-    for (let [i, domain] of cpDomains.entries()) {
-      // console.log("Go " + i);
-      let option = JSON.parse(defaultOptions);
-      option.url = 'http://' + domain + '/computeparty/raiseToKey';
-      option.data.input = result[shareIndex];
-      option.headers.Host = domain;
-      await axios(option)
-        .then(function (response) {
-          result[shareIndex] = response.data;
-        })
-        .catch(function (error) {
-          console.log(error);
-        });
-    };
-  };
+  for (let [i, domain] of cpDomains.entries()) {
+    let option = JSON.parse(defaultOptions);
+    option.url = domain + '/computeparty/raiseToKey';
+    option.data.input = result;
+    option.data.creatorDomain = creatorDomain;
+    await axios(option)
+      .then(function (response) {
+        result = response.data;
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+  }
 
   currentShares = result;
   isComputing = false;
@@ -105,62 +147,85 @@ router.get('/computeFromShares', async (req, res, next) => {
   // Now collect shares from all of the other compute parties
   let options = [];
 
-  cpDomains.forEach((domain, i) => {
-    if (domain != config.domain) {
-      const option = JSON.parse(defaultOptions);
-      option.url = "http://" + domain + "/computeparty/getComputedShares";
-      option.domain = domain;
-      options.push(option);
-    }
+  // Instead of requesting from everyone else, just wait for them to send their finished shares to you
+
+  // console.log("Calculated share: ");
+  // console.log(oprf.decodePoint(currentShares[0], encodeType));
+
+
+  cpDomains.forEach((CPDomain, i) => {
+    const option = JSON.parse(defaultOptions);
+    option.method = "PUT";
+    option.url = CPDomain + "/computeparty/pushComputedShares";
+    option.data = { input: currentShares, CPDomain: config.domain };
+    option.domain = CPDomain;
+    options.push(option);
   });
 
   const requests = options.map(option => {
     return axios(option);
   });
 
-  currentData = currentShares.map(share => {
-    return oprf.decodePoint(share, encodeType);
-  });
   axios.all(requests)
     .then(axios.spread((...responses) => {
-      // Response is a list of the responses that went out
-      responses.forEach((response, cpIndex) => {
-        // response.data is a list of the masked shares that each party had
-        // they now need to be summed to get the final product
-        response.data.forEach((value, shareIndex) => {
-          // console.log("\n\n\n\n\nAdding");
-          // console.log(currentData[shareIndex]);
-          // console.log("\n\n\nto");
-          // console.log(oprf.decodePoint(value, encodeType));
-          currentData[shareIndex] = oprf.sodium.crypto_core_ristretto255_add(currentData[shareIndex], oprf.decodePoint(value, encodeType));
-        });
-      });
 
-      currentData = currentData.map(value => {
-        return oprf.encodePoint(value, encodeType);
-      });
+      function waitForAllShares() {
+        // if it includes -1, you have not received one of the shares
+        if (cpShares.includes(-1)) {
+          setTimeout(waitForAllShares, 100);
+        } else {
 
-      if (fileName) {
-        const dataToWrite = currentData.map(entry => {
-          return { 'ssn' : entry };
-        });
+          // Now we just need to sum similar shares of all CPs i.e., all of the first shares together, all of the second shares together, and so on
+          let currentData = [];
 
-        let header = "";
-        if (!fs.existsSync(fileName + '.csv')) {
-          header = csvStringifier.getHeaderString();
+          cpShares = cpShares.map(shares => {
+            shares = shares.map(share => {
+              return oprf.decodePoint(share, encodeType);
+            });
+            return shares;
+          });
+
+          cpShares[0].forEach((value, shareIndex) => {
+            let randVal = oprf.generateRandomScalar();
+            let share = randVal; //oprf.decodePoint(value, encodeType);
+            cpShares.forEach((shares, cpIndex) => {
+              // console.log("Adding: ");
+              // console.log(share);
+              // console.log("\nTo:");
+              // console.log(shares[shareIndex]);
+              share = oprf.sodium.crypto_core_ristretto255_add(share, shares[shareIndex]);//oprf.decodePoint(shares[shareIndex], encodeType));
+            });
+            share = oprf.sodium.crypto_core_ristretto255_sub(share, randVal);
+            currentData.push(share);
+          });
+
+          currentData = currentData.map(value => {
+            return oprf.encodePoint(value, encodeType);
+          });
+
+          const dataToWrite = currentData.map(entry => {
+            return { 'ssn': entry };
+          });
+
+          let header = "";
+          if (!fs.existsSync(creatorDomain + '.csv')) {
+            header = csvStringifier.getHeaderString();
+          }
+
+          const body = csvStringifier.stringifyRecords(dataToWrite);
+          // console.log("\n\n\nBody:");
+          // console.log(body);
+          fs.appendFileSync(process.env.NODE_ENV + 'table' + creatorDomains.indexOf(creatorDomain) + '.csv', header + body);
+
+
+          // console.log("\n\n\nReturn");
+          // console.log(currentData);
+
+          res.status(200).json(currentData);
         }
-
-        const body = csvStringifier.stringifyRecords(dataToWrite);
-        console.log("\n\n\nBody:");
-        console.log(body);
-        fs.appendFileSync(fileName + '.csv', header + body);
       }
 
-      console.log("\n\n\nReturn");
-      console.log(currentData);
-
-      // Properly sends back the data, summed together and masked by all keys
-      res.status(200).json(currentData);
+      waitForAllShares();
     }))
     .catch(function (error) {
       console.log(error);
@@ -182,16 +247,27 @@ router.get('/getComputedShares', (req, res, next) => {
   waitForCompute();
 });
 
-// should get a shared secret, showing they're an approved querier
-// TODO: Decide whether to have an active file or not
+// Need a CP ID (use cp domain for now)
+router.put('/pushComputedShares', (req, res, next) => {
+  const CPDomain = req.body.CPDomain;
+
+  cpShares[cpDomains.indexOf(CPDomain)] = req.body.input;
+
+  res.status(200).send("Share pushed!");
+});
+
+// Will need to have a specific file for each
+/*
 router.get('/listData', (req, res, next) => {
-  // Check if secret is the same
+
   const tableData = ingest.readCsv(req.body.fileName);
   const result = tableData.map(entry => {
     return entry.ssn;
   });
 
   res.status(200).json(result);
-});
+}); */
 
-module.exports = router;
+module.exports = {
+  router: router
+}
