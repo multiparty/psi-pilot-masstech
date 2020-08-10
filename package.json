@@ -32,6 +32,7 @@
     "yargs": "^15.3.1"
   },
   "devDependencies": {
+    "glob": "^7.1.6",
     "jest": "^26.0.1"
   }
 }

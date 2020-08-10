@@ -15,7 +15,7 @@ const oprf = new OPRF();
  */
 // TODO: Possibly split this into two functions so can be tested separately
 // TODO: have unique server identifier for this party (probably solved with config)
-async function computeAndSendShares(input, parties) {
+async function computeAndSendShares(input, parties, creatorDomain) {
 
   await oprf.ready;
 
@@ -60,7 +60,7 @@ async function computeAndSendShares(input, parties) {
   // Possibly send some unique key for these requests to ensure that they're the same request
   var defaultOptions = {
     'method': 'GET',
-    'url': 'http://localhost:3000',
+    'url': creatorDomain,
     data:
     {
       identifier: shareIdentifier
@@ -76,7 +76,7 @@ async function computeAndSendShares(input, parties) {
     option.url = domain + "/computeparty/computeFromShares";
     option.domain = domain;
     option.data.input = shares[i];
-    option.data.creatorDomain = "http://localhost:3000"
+    option.data.creatorDomain = creatorDomain;
     options.push(option);
   });
 
@@ -113,7 +113,7 @@ async function computeAndSendShares(input, parties) {
       return data;
     }))
     .catch(function (error) {
-      console.log(error);
+      // console.log(error);
     });
 
 
