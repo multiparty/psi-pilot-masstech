@@ -4,11 +4,11 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const OPRF = require('oprf');
+const config = require('config');
 
-// Set to ASCII encoding by default
-let encodeType = 'ASCII';
-let domain = 'localhost:3000';
-let holderDomain = 'localhost:3000';
+let encodeType = config.encodeType;
+let port = config.port;
+let holderDomain = config.serverDomain;
 const oprf = new OPRF();
 
 /**
@@ -19,147 +19,52 @@ const oprf = new OPRF();
  */
 
 /**
- * @swagger
- * path:
- *  /querylist/setparams:
- *    put:
- *      summary: Changes the encode type, domain, and list holder domain being used
- *      parameters:
- *       - in: body
- *         name: Query-Array
- *         schema:
- *           type: object
- *           properties:
- *             encodeType:
- *               type: string
- *               description: Whether to encode oprf values in 'ASCII' or 'UTF-8'
- *             domain:
- *               type: string
- *               description: The querier's domain
- *             holderDomain:
- *               type: string
- *               description: The domain of the list holder to be queried
- *           example:
- *             encodeType: "ASCII"
- *             domain: "localhost:3000"
- *             holderDomain: "localhost:8080"
- *      responses:
- *        "200":
- *          description: Parameters were successfully updated
- *          schema:
- *            type: string
- *            example: "Encoding set to ASCII domain set to localhost:3000, and holder domain set to localhost:8080"
+ * Masks with querier's key and sends those values to be masked by the list holder, then unmasks data with querier's key
+ * @param  {String[]} input - Plaintext data to be masked and sent to list holder
+ * @param  {String} key - Encoded querier's key
+ * @param  {String} secret - Secret shared by querier and holder
+ * @returns {String[]} Encoded values of the input raised to only the list holder's key
  */
-router.put('/setParams', (req, res, next) => {
-  if (req.body.encodeType) {
-    encodeType = req.body.encodeType;
-  }
-  if (req.body.domain) {
-    domain = req.body.domain;
-  }
-  if (req.body.holderDomain) {
-    holderDomain = req.body.holderDomain;
-  }
+async function maskWithHolderKey(input, key, secret) {
+  await oprf.ready
 
-  res.status(200).send("Encoding set to " + encodeType + ", domain set to " + domain + ", and holder domain set to " + holderDomain);
-});
-
-/**
- * @swagger
- * path:
- *  /querylist/maskWithHolderKey:
- *    get:
- *      summary: Masks with querier's key and sends those values to be masked by the list holder
- *      tags: [Query List]
- *      parameters:
- *       - in: body
- *         name: Query-Array
- *         schema:
- *           type: object
- *           required:
- *            - input
- *            - key
- *            - secret
- *           properties:
- *             input:
- *               type: array
- *               items:
- *                 type: string
- *               description: Plaintext data to be masked and sent to list holder
- *             key:
- *               type: string
- *               description: Key to raise data to before sending to list holder
- *             secret:
- *               type: string
- *               description: Secret value shared between querier and list holder
- *             display:
- *               type: boolean
- *               description: Whether or not to display the values sent to the list holder
- *           example:
- *             input: [ "748320512", "002381635", "129427809", ... ]
- *             key: "56423091200"
- *             secret: "23449023"
- *      responses:
- *        "200":
- *          description: Values were masked by list holder
- *          schema:
- *           type: array
- *           items:
- *             type: string
- *             description: values raised to holder's key
- *           example:
- *             [ " rã\u0004\\ÉtÝè³\u000e¯nEu0018Å÷¹\tóv2£z\u0006«Ë?ì}", "¤vcÑ\u0017\u0014'ièèã1Q)Ë-jú{ÍµW§)Öà*\u0010", "ú9e\u001dJ=ÀÓJË3\u0005õ\n_Aí(Íib4\u000eÈNãx3", ... ]
- */
-router.get('/maskWithHolderKey', (req, res, next) => {
-  const input = req.body.input;
-  let key = req.body.key;
-  const secret = req.body.secret;
-
-  oprf.ready.then(function () {
-    key = oprf.decodePoint(key, encodeType);
-    const data = input.map(entry => {
-      const maskedValue = oprf.scalarMult(oprf.hashToPoint(entry), key);
-      return oprf.encodePoint(maskedValue, encodeType);
-    });
-
-    var options = {
-      method: 'GET',
-      url: 'http://' + holderDomain + '/listholder/raiseToKey',
-      headers:
-      {
-        'cache-control': 'no-cache',
-        Connection: 'keep-alive',
-        Host: holderDomain,
-        'Cache-Control': 'no-cache',
-        Accept: '*/*',
-        'Content-Type': 'application/json',
-      },
-      data:
-      {
-        input: data,
-        secret: secret
-      },
-      responseType: 'json'
-    };
-
-    if (req.body.display) {
-      console.log("Values being sent to list holder: ");
-      console.log(options.data.input);
-    }
-
-    // send to list holder
-    axios(options)
-      .then(function (response) {
-        const result = response.data.map(entry => {
-          return oprf.encodePoint(oprf.unmaskPoint(oprf.decodePoint(entry, encodeType), key), encodeType);
-        });
-        res.status(200).send(result);
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+  key = oprf.decodePoint(key, encodeType);
+  const data = input.map(entry => {
+    const maskedValue = oprf.scalarMult(oprf.hashToPoint(entry), key);
+    return oprf.encodePoint(maskedValue, encodeType);
   });
-});
+
+  const options = {
+    method: 'GET',
+    url: holderDomain + '/listholder/raiseToKey',
+    data:
+    {
+      input: data,
+      secret: secret
+    },
+    responseType: 'json'
+  };
+
+  if(config.display) {
+    console.log("--------------------------------");
+    console.log("Data being sent to list holder: ");
+    console.log(data);
+    console.log("--------------------------------");
+  }
+
+  // send to list holder
+  return axios(options)
+    .then(function (response) {
+      const result = response.data.map(entry => {
+        return oprf.encodePoint(oprf.unmaskPoint(oprf.decodePoint(entry, encodeType), key), encodeType);
+      });
+
+      return result;
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+}
 
 /**
  * @swagger
@@ -185,13 +90,9 @@ router.get('/maskWithHolderKey', (req, res, next) => {
  *             secret:
  *               type: string
  *               description: Secret value shared between querier and list holder
- *             display:
- *               type: boolean
- *               description: Whether or not to display the values sent to the list holder
  *           example:
  *             input: [ "748320512", "002381635", "129427809", ... ]
  *             secret: "23449023"
- *             display: true
  *      responses:
  *        "200":
  *          description: Holder's list was successfully searched
@@ -207,61 +108,43 @@ router.get('/checkIfInList', (req, res, next) => {
   const input = req.body.input;
   const secret = req.body.secret;
 
-  oprf.ready.then(function () {
+  oprf.ready.then(async function () {
 
     const key = oprf.generateRandomScalar();
 
-    var options = {
+    const maskedInput = await maskWithHolderKey(input, oprf.encodePoint(key, encodeType), secret);
+
+    let options = {
       method: 'GET',
-      url: 'http://' + domain + '/querylist/maskWithHolderKey',
-      headers:
-      {
-        'cache-control': 'no-cache',
-        Connection: 'keep-alive',
-        Host: domain,
-        'Cache-Control': 'no-cache',
-        Accept: '*/*',
-        'Content-Type': 'application/json',
-      },
-      data:
-      {
-        input: input,
-        key: oprf.encodePoint(key, encodeType),
-        secret: secret,
-        display: req.body.display
-      },
+      url: holderDomain + '/listholder/listdata',
+      data: { 'secret': secret },
       responseType: 'json'
     };
 
     axios(options)
-      .then(function (maskedInput) {
-        options.url = 'http://' + holderDomain + '/listholder/listdata';
-        options.data = { 'secret': secret };
+      .then(function (tableData) {
+        let unionIndexes = [];
 
-        axios(options)
-          .then(function (tableData) {
-            let unionIndexes = [];
-            for (const [index, queryVal] of maskedInput.data.entries()) {
-              for (let entry of tableData.data) {
+        for (const [index, queryVal] of maskedInput.entries()) {
+          for (let entry of tableData.data) {
 
-                if (entry === queryVal) {
-                  unionIndexes.push(index);
-                  break;
-                }
-              }
+            if (entry === queryVal) {
+              unionIndexes.push(index);
+              break;
             }
+          }
+        }
 
-            res.status(200).send(unionIndexes);
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
+        res.status(200).send(unionIndexes);
       })
       .catch(function (error) {
         console.log(error);
       });
+  });
 
-  })
 });
 
-module.exports = router;
+module.exports = {
+  router:router,
+  maskWithHolderKey:maskWithHolderKey
+}

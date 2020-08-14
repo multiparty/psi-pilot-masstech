@@ -5,114 +5,60 @@ require('dotenv').config();
 
 const axios = require('axios');
 const dataGenerator = require('../utils/data-generator');
-const ingest = require('../utils/ingest');
+const queryList = require('./routes/query-list');
+const listHolder = require('./routes/list-holder');
 const fs = require('fs');
 const OPRF = require('oprf');
-const args = require('yargs');
+const config = require('config');
+const { describe } = require('yargs');
 
 const oprf = new OPRF();
 const holderKey = process.env.KEY;
-const encodeType = process.env.ENCODE_TYPE;
+const encodeType = config.encodeType;
+const serverDomain = config.serverDomain;
 
-const testFileName = 'test-table';
-for (let i = 0; i < 10; i++) {
-  if (fs.existsSync('./p2p/' + testFileName + i.toString() + '.csv')) {
-    fs.unlinkSync('./p2p/' + testFileName + i.toString() + '.csv');
-  }
-}
+const testFileName = config.fileName;
 
-var options = {
+let options = {
   method: 'PUT',
-  url: 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname',
-  headers:
-  {
-    'cache-control': 'no-cache',
-    Connection: 'keep-alive',
-    Host: process.env.OTHER_DOMAIN,
-    'Cache-Control': 'no-cache',
-    Accept: '*/*',
-    'Content-Type': 'application/json'
-  },
+  url: serverDomain,
   data: { input: [{}] },
   responseType: 'json'
 };
 
+// Make sure you are starting with a blank file
+if (fs.existsSync('./p2p/' + testFileName)) {
+  fs.unlinkSync('./p2p/' + testFileName);
+}
+
 test('Table is of the proper size', done => {
-  oprf.ready.then(function () {
+  oprf.ready.then(async function () {
     const dataSize = 100;
 
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/';
-    options.data = { fileName: testFileName + '1' };
+    const input = dataGenerator.generateSsnArray(dataSize);
 
-    // Change name of test file
-    axios(options)
+    options.method = 'POST';
+    options.url = serverDomain + '/listholder/arrayUpdate';
+    options.data = { input: input };
+
+    // Insert input into the table
+    await axios(options)
       .then(function (response) {
-        options.method = 'POST';
-        options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/objectUpdate';
-        options.data = { input: dataGenerator.generateData(dataSize, true) }
-
-        axios(options)
-          .then(function (response) {
-            options.method = 'GET';
-            options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata';
-            options.data = { secret: process.env.SHARED };
-
-            axios(options)
-              .then(function (tableData) {
-                expect(tableData.data.length).toBe(dataSize);
-                done();
-              })
-              .catch(function (error) {
-                console.log(error);
-              });
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
       })
       .catch(function (error) {
         console.log(error);
       });
-  });
-});
 
+    options.method = 'GET';
+    options.url = serverDomain + '/listholder/listdata';
+    options.data = { secret: process.env.SHARED };
 
-test('List holder writes a single entry properly', done => {
-  oprf.ready.then(function () {
-    const input = dataGenerator.generateData(1, true);
-
-    options.method = 'PUT';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/';
-    options.data = { fileName: testFileName + '2' };
-    // Change name of test file
+    // Get the contents of the table
     axios(options)
-      .then(function (response) {
-        options.method = 'POST';
-        options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/singleUpdate';
-        options.data = { input: input[0].ssn };
-
-        axios(options)
-          .then(function (response) {
-            options.method = 'GET';
-            options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata';
-            options.data = { secret: process.env.SHARED };
-
-            // Get the contents of the table
-            axios(options)
-              .then(function (tableData) {
-                const hashedKey = oprf.hashToPoint(holderKey);
-                const hashedInput = oprf.scalarMult(oprf.hashToPoint(input[0].ssn), hashedKey);
-
-                expect(hashedInput).toEqual(oprf.decodePoint(tableData.data[0], encodeType));
-                done();
-              })
-              .catch(function (error) {
-                console.log(error);
-              });
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
+      .then(function (tableData) {
+        expect(tableData.data.length).toBe(dataSize);
+        fs.unlinkSync('./p2p/' + testFileName);
+        done();
       })
       .catch(function (error) {
         console.log(error);
@@ -121,45 +67,38 @@ test('List holder writes a single entry properly', done => {
 });
 
 test('List holder writes many entries properly', done => {
-  oprf.ready.then(function () {
+  oprf.ready.then(async function () {
     const dataSize = 1000;
-    const input = dataGenerator.generateData(dataSize, true);
+    const input = dataGenerator.generateSsnArray(dataSize);
 
-    options.method = 'PUT';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/';
-    options.data = { fileName: testFileName + '3' };
-    // Change name of test file
-    axios(options)
+    options.method = 'POST';
+    options.url = serverDomain + '/listholder/arrayUpdate';
+    options.data = { input: input };
+
+    // Insert input into the table
+    await axios(options)
       .then(function (response) {
-        options.method = 'POST';
-        options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/objectUpdate';
-        options.data = { input: input };
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
 
-        axios(options)
-          .then(function (response) {
-            options.method = 'GET';
-            options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata';
-            options.data = { secret: process.env.SHARED };
+    options.method = 'GET';
+    options.url = serverDomain + '/listholder/listdata';
+    options.data = { secret: process.env.SHARED };
 
-            // Get the contents of the table
-            axios(options)
-              .then(function (tableData) {
-                const hashedKey = oprf.hashToPoint(holderKey);
+    // Get the contents of the table
+    axios(options)
+      .then(function (tableData) {
+        const hashedKey = oprf.decodePoint(holderKey, encodeType);
 
-                const hashedInput = input.map(entry => {
-                  return oprf.encodePoint(oprf.scalarMult(oprf.hashToPoint(entry.ssn), hashedKey), encodeType);
-                });
+        const hashedInput = input.map(entry => {
+          return oprf.encodePoint(oprf.scalarMult(oprf.hashToPoint(entry), hashedKey), encodeType);
+        });
 
-                expect(hashedInput).toEqual(tableData.data);
-                done();
-              })
-              .catch(function (error) {
-                console.log(error);
-              });
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
+        expect(hashedInput).toEqual(tableData.data);
+        fs.unlinkSync('./p2p/' + testFileName);
+        done();
       })
       .catch(function (error) {
         console.log(error);
@@ -167,9 +106,10 @@ test('List holder writes many entries properly', done => {
   });
 });
 
+
 test('/listholder/listdata returns error on wrong secret', done => {
   options.method = 'GET';
-  options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listdata';
+  options.url = serverDomain + '/listholder/listdata';
   options.data = { secret: 'wrong secret' };
 
   axios(options)
@@ -185,7 +125,7 @@ test('/listholder/listdata returns error on wrong secret', done => {
 
 test('/listholder/raiseToKey returns error on wrong secret', done => {
   options.method = 'GET';
-  options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/raiseToKey';
+  options.url = serverDomain + '/listholder/raiseToKey';
   options.data = { input: ['1234'], secret: 'wrong secret' };
 
   axios(options)
@@ -200,24 +140,83 @@ test('/listholder/raiseToKey returns error on wrong secret', done => {
 });
 
 
-test('Proper value is returned from querylist/maskWithHolderKey', done => {
+test('Proper value is returned from querylist/maskWithHolderKey', async (done) => {
   return oprf.ready.then(async function () {
-    const dataSize = 1000;
+    const dataSize = 10;
     const queryKey = oprf.generateRandomScalar();
 
     let input = dataGenerator.generateData(dataSize, true);
 
     input = input.map(x => x.ssn);
 
+    const maskedInput = await queryList.maskWithHolderKey(input, oprf.encodePoint(queryKey, encodeType), process.env.SHARED);
+
+    const correct = input.map(x => oprf.encodePoint(oprf.scalarMult(oprf.hashToPoint(x), oprf.decodePoint(holderKey, encodeType)), encodeType));
+
+    expect(maskedInput).toEqual(correct);
+    done();
+  });
+});
+
+test('querylist/checkIfInList properly returns indexes of values in table', done => {
+  return oprf.ready.then(async function () {
+    const dataSize = 500;
+    const queriesInTable = 20;
+    const numberOfQueries = 100;
+
+    const queryKey = oprf.generateRandomScalar();
+
+    // Choose which values put into the table should be successfully found
+    let tableInput = dataGenerator.generateSsnArray(dataSize);
+
+    let containedQueries = [];
+    for (let i = 0; i < queriesInTable; i++) {
+      const randVal = Math.floor(Math.random() * dataSize);
+      containedQueries.push(tableInput[randVal]);
+    }
+
+    // Choose what the contained queries' indexes will be in the query
+    let containedIndexes = [];
+    for (let i = 0; i < queriesInTable; i++) {
+      let randVal = Math.floor(Math.random() * numberOfQueries);
+      while (containedIndexes.includes(randVal)) {
+        randVal = Math.floor(Math.random() * numberOfQueries);
+      }
+      containedIndexes.push(randVal);
+    }
+    containedIndexes.sort(function (a, b) { return a - b });
+
+    let queryList = [];
+    for (const [i, containedIndex] of containedIndexes.entries()) {
+      if (i != 0) {
+        queryList = queryList.concat(dataGenerator.generateSsnArray(containedIndex - containedIndexes[i - 1] - 1));
+      } else {
+        queryList = queryList.concat(dataGenerator.generateSsnArray(containedIndex));
+      }
+      queryList.push(containedQueries[i]);
+    }
+
+    options.method = 'POST';
+    options.url = serverDomain + '/listholder/arrayUpdate';
+    options.data = { input: tableInput };
+
+    // Create a list for the data in tableInput
+    await axios(options)
+      .then(function (response) {
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+
     options.method = 'GET';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/querylist/maskWithHolderKey';
-    options.data = { input: input, key: oprf.encodePoint(oprf.hashToPoint(queryKey), encodeType), secret: process.env.SHARED };
+    options.url = 'http://localhost:' + process.env.PORT + '/querylist/checkIfInList/';
+    options.data = { input: queryList, secret: process.env.SHARED };
 
+    // Call the client-side API to do a search of the table
     axios(options)
-      .then(function (maskedInput) {
-        const correct = input.map(x => oprf.encodePoint(oprf.scalarMult(oprf.hashToPoint(x), oprf.hashToPoint(holderKey)), encodeType));
-
-        expect(maskedInput.data).toEqual(correct);
+      .then(function (result) {
+        expect(result.data).toEqual(containedIndexes);
+        fs.unlinkSync('./p2p/' + testFileName);
         done();
       })
       .catch(function (error) {
@@ -225,77 +224,3 @@ test('Proper value is returned from querylist/maskWithHolderKey', done => {
       });
   });
 });
-
-test('querylist/checkIfInList properly returns indexes of values in table', done => {
-  return oprf.ready.then(async function () {
-    const dataSize = 1000;
-    const queriesInTable = 12;
-    const numberOfQueries = 100;
-
-    const queryKey = oprf.generateRandomScalar();
-
-    let tableInput = dataGenerator.generateData(dataSize, true);
-
-    options.method = 'PUT';
-    options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/listname/';
-    options.data = { fileName: testFileName + '4' };
-    // Change name of test file
-    axios(options)
-      .then(function (response) {
-        options.method = 'POST';
-        options.url = 'http://' + process.env.OTHER_DOMAIN + '/listholder/objectUpdate';
-        options.data = { input: tableInput };
-
-        axios(options)
-          .then(function (response) {
-            // Choose which values put into the table should be successfully found
-            let containedQueries = [];
-            for (let i = 0; i < queriesInTable; i++) {
-              const randVal = Math.floor(Math.random() * dataSize);
-              containedQueries.push(tableInput[randVal].ssn);
-            }
-
-            // Choose what the contained queries' indexes will be in the query
-            let containedIndexes = [];
-            for (let i = 0; i < queriesInTable; i++) {
-              let randVal = Math.floor(Math.random() * numberOfQueries);
-              while (containedIndexes.includes(randVal)) {
-                randVal = Math.floor(Math.random() * numberOfQueries);
-              }
-              containedIndexes.push(randVal);
-            }
-            containedIndexes.sort(function (a, b) { return a - b });
-
-            let queryList = [];
-            for (const [i, containedIndex] of containedIndexes.entries()) {
-              if (i != 0) {
-                queryList = queryList.concat(dataGenerator.generateSsnArray(containedIndex - containedIndexes[i - 1] - 1));
-              } else {
-                queryList = queryList.concat(dataGenerator.generateSsnArray(containedIndex));
-              }
-              queryList.push(containedQueries[i]);
-            }
-
-            options.method = 'GET';
-            options.url = 'http://' + process.env.OTHER_DOMAIN + '/querylist/checkIfInList/';
-            options.data = { input: queryList, secret: process.env.SHARED };
-
-            axios(options)
-              .then(function (result) {
-                expect(result.data).toEqual(containedIndexes);
-                done();
-              })
-              .catch(function (error) {
-                console.log(error);
-              });
-          })
-          .catch(function (error) {
-            console.log(error);
-          });
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
-  });
-});
-
