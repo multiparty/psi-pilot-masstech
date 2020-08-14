@@ -7,7 +7,8 @@ const axios = require('axios');
 const dataGenerator = require('../utils/data-generator');
 const computeParty = require('./routes/compute-party');
 const ingest = require('../utils/ingest');
-const listholder = require('./routes/list-creator')
+const listholder = require('./routes/list-creator');
+const querier = require('./routes/query-list');
 const fs = require('fs');
 const OPRF = require('oprf');
 const glob = require("glob");
@@ -117,7 +118,35 @@ test('List holder properly calculates shares to be sent out', done => {
   });
 });
 
-test('CPs all calculate the same data', done => {
+test('List holder properly calculates shares to be sent out', done => {
+  oprf.ready.then(async function () {
+    await deleteTestFiles();
+
+    const input = dataGenerator.generateSsnArray(dataSize);
+
+    // Shares is a 2D array that his cpDomains x input size large
+    const shares = (await querier.computeAndSendShares(input, cpDomains, creatorDomains[0])).shares;
+
+    const correct = input.map(ssn => {
+      return oprf.hashToPoint(ssn);
+    });
+
+    const result = shares[0].map((share, shareIndex) => {
+      let randNum = oprf.generateRandomScalar();
+      let shareSum = randNum;
+      shares.forEach(domainShares => {
+        shareSum = oprf.sodium.crypto_core_ristretto255_add(shareSum, oprf.decodePoint(domainShares[shareIndex], encodeType));
+      });
+      return oprf.sodium.crypto_core_ristretto255_sub(shareSum, randNum);
+    });
+
+    expect(result).toEqual(correct);
+    done();
+  });
+});
+
+let lastKeys;
+test('CPs all calculate the same data for list creator', done => {
   oprf.ready.then(async function () {
     await deleteTestFiles();
 
@@ -125,6 +154,8 @@ test('CPs all calculate the same data', done => {
     const keys = cpKeys.map(keyList => {
       return oprf.hashToPoint(keyList.pop());
     });
+
+    lastKeys = keys;
 
     // Shares is a 2D array that is cpDomains x input size large
     const listholderResult = await listholder.computeAndSendShares(input, cpDomains, creatorDomains[0]);
@@ -141,6 +172,29 @@ test('CPs all calculate the same data', done => {
   });
 });
 
+test('CPs all calculate the same data for querier', done => {
+  oprf.ready.then(async function () {
+    await deleteTestFiles();
+
+    const input = dataGenerator.generateSsnArray(dataSize);
+    const keys = lastKeys;
+
+    // Shares is a 2D array that is cpDomains x input size large
+    const listholderResult = await querier.computeAndSendShares(input, cpDomains, creatorDomains[0]);
+    const shares = listholderResult.shares;
+    const answers = listholderResult.results;
+
+    const correct = input.map(ssn => {
+      return oprf.scalarMult(keys[0], oprf.scalarMult(keys[1], oprf.scalarMult(keys[2], oprf.hashToPoint(ssn))));
+    });
+
+    expect(answers[0]).toEqual(answers[1]);
+    expect(answers[2]).toEqual(answers[1]);
+    done();
+  });
+});
+
+
 test('CPs properly calculate masked data for single party', done => {
   oprf.ready.then(async function () {
     await deleteTestFiles();
@@ -150,7 +204,35 @@ test('CPs properly calculate masked data for single party', done => {
       return oprf.hashToPoint(keyList.pop());
     });
 
+    lastKeys = keys;
+
     const listholderResult = await listholder.computeAndSendShares(input, cpDomains, creatorDomains[0]);
+    const shares = listholderResult.shares;
+    const answers = listholderResult.results;
+
+    const correct = input.map(ssn => {
+      return oprf.scalarMult(oprf.scalarMult(oprf.scalarMult(oprf.hashToPoint(ssn), keys[0]), keys[1]), keys[2]);
+    });
+
+    // It's been established that all the CPs find the same answer, so it is sufficient to check that just one of them is correct in its calculations
+    const result = answers[0].map(cp0Answer => {
+      return oprf.decodePoint(cp0Answer, encodeType);
+    });
+
+    expect(result).toEqual(correct);
+    done();
+  });
+});
+
+test('CPs properly calculate masked data for single query', done => {
+  oprf.ready.then(async function () {
+    await deleteTestFiles();
+
+    const input = dataGenerator.generateSsnArray(dataSize);
+    // Use the keys last used by the list creators
+    const keys = lastKeys
+
+    const listholderResult = await querier.computeAndSendShares(input, cpDomains, creatorDomains[0]);
     const shares = listholderResult.shares;
     const answers = listholderResult.results;
 
@@ -235,6 +317,29 @@ test('CPs properly write masked data for single party to table', done => {
     });
 
     expect(data).toEqual(correct);
+    done();
+  });
+});
+
+test('Querier gets correct table data back from CP', done => {
+  oprf.ready.then(async function () {
+    await deleteTestFiles();
+
+    const input = dataGenerator.generateSsnArray(dataSize);
+    const keys = cpKeys.map(keyList => {
+      return oprf.hashToPoint(keyList.pop());
+    });
+
+    await listholder.computeAndSendShares(input, cpDomains, creatorDomains[0]);
+
+    let correct = ingest.readCsv("./outsourced/compute0table0.csv");
+    correct = correct.map(entry => {
+      return entry.ssn;
+    });
+
+    const result = await querier.getTableData(creatorDomains[0]);
+
+    expect(result).toEqual(correct);
     done();
   });
 });
@@ -330,6 +435,53 @@ test('CPs properly calculate masked data for multiple requests from multiple par
       expect(overallResult).toEqual(overallCorrect);
     }
 
+    done();
+  });
+});
+
+test('querylist/checkIfInList properly returns indexes of values in table', done => {
+  oprf.ready.then(async function () {
+    await deleteTestFiles();
+
+    const dataSize = 200;
+    const queriesInTable = 20;
+    const numberOfQueries = 100;
+
+    // Choose which values put into the table should be successfully found
+    let tableInput = dataGenerator.generateSsnArray(dataSize);
+
+    let containedQueries = [];
+    for (let i = 0; i < queriesInTable; i++) {
+      const randVal = Math.floor(Math.random() * dataSize);
+      containedQueries.push(tableInput[randVal]);
+    }
+
+    // Choose what the contained queries' indexes will be in the query
+    let containedIndexes = [];
+    for (let i = 0; i < queriesInTable; i++) {
+      let randVal = Math.floor(Math.random() * numberOfQueries);
+      while (containedIndexes.includes(randVal)) {
+        randVal = Math.floor(Math.random() * numberOfQueries);
+      }
+      containedIndexes.push(randVal);
+    }
+    containedIndexes.sort(function (a, b) { return a - b });
+
+    let queryList = [];
+    for (const [i, containedIndex] of containedIndexes.entries()) {
+      if (i != 0) {
+        queryList = queryList.concat(dataGenerator.generateSsnArray(containedIndex - containedIndexes[i - 1] - 1));
+      } else {
+        queryList = queryList.concat(dataGenerator.generateSsnArray(containedIndex));
+      }
+      queryList.push(containedQueries[i]);
+    }
+
+    await listholder.computeAndSendShares(tableInput, cpDomains, creatorDomains[0]);
+
+    const result = await querier.checkIfInList(queryList, cpDomains, creatorDomains[0]);
+
+    expect(result).toEqual(containedIndexes);
     done();
   });
 });

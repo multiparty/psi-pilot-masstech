@@ -56,13 +56,12 @@ resetCPShares();
 router.get('/raiseToKey', (req, res, next) => {
   const input = req.body.input;
   const creatorDomain = req.body.creatorDomain;
+  const isUpdate = req.body.isUpdate;
 
   if (req.body.encodeType) encodeType = req.body.encodeType;
 
   function waitForFreshKey() {
-    if (!cpShares.includes(-1)) {
-      setTimeout(waitForFreshKey, 100);
-    } else {
+    if (!isUpdate || cpShares.includes(-1)) {
       const keyIndex = creatorDomains.indexOf(creatorDomain);
 
       // Key was not found for specified creatorDomain
@@ -80,6 +79,8 @@ router.get('/raiseToKey', (req, res, next) => {
 
         res.status(200).json(result);
       });
+    } else {
+      setTimeout(waitForFreshKey, 100);
     }
   }
 
@@ -87,42 +88,48 @@ router.get('/raiseToKey', (req, res, next) => {
 });
 
 // Receives a list of shares to be masked and summed
-// Optional fileName that will be written to
 // Returns the final calculation
 // Needs to be told the other parties at some point (config file)
 // need to be sent the creator's identifier
-// Always writes to a file
+// Uses isUpdate to determine whether this is a interseciton check or a list update
 router.get('/computeFromShares', async (req, res, next) => {
   await oprf.ready;
 
+  const isUpdate = req.body.isUpdate;
   const creatorDomain = req.body.creatorDomain;
-  if (args.test) {
-    keys[creatorDomains.indexOf(creatorDomain)] = oprf.hashToPoint(config.testKeys.pop());
-  } else {
-    keys[creatorDomains.indexOf(creatorDomain)] = oprf.generateRandomScalar();
+  let input = req.body.input;
+
+  if (isUpdate) {
+    if (args.test) {
+      keys[creatorDomains.indexOf(creatorDomain)] = oprf.hashToPoint(config.testKeys.pop());
+    } else {
+      keys[creatorDomains.indexOf(creatorDomain)] = oprf.generateRandomScalar();
+    }
   }
 
   await resetCPShares();
 
-  // Store the new shares sent to you so that you have them for the next request
-  const dataToWrite = req.body.input.map(entry => {
-    return { 'share': entry };
-  });
+  if (isUpdate) {
+    // Store the new shares sent to you so that you have them for the next request
+    const dataToWrite = input.map(entry => {
+      return { 'share': entry };
+    });
 
-  const shareFileName = process.env.NODE_ENV + 'shares' + creatorDomains.indexOf(creatorDomain) + '.csv';
-  let header = "";
-  if (!fs.existsSync(shareFileName)) {
-    header = plainShareStringifier.getHeaderString();
+    const shareFileName = process.env.NODE_ENV + 'shares' + creatorDomains.indexOf(creatorDomain) + '.csv';
+    let header = "";
+    if (!fs.existsSync(shareFileName)) {
+      header = plainShareStringifier.getHeaderString();
+    }
+
+    const body = plainShareStringifier.stringifyRecords(dataToWrite);
+    fs.appendFileSync(shareFileName, header + body);
+
+    // TODO: Change order after reading all of the shares back
+    const allShares = ingest.readCsv(shareFileName);
+    input = allShares.map(entry => {
+      return entry.share;
+    });
   }
-
-  const body = plainShareStringifier.stringifyRecords(dataToWrite);
-  fs.appendFileSync(shareFileName, header + body);
-
-  // TODO: Change order after reading all of the shares back
-  const allShares = ingest.readCsv(shareFileName);
-  const input = allShares.map(entry => {
-    return entry.share;
-  });
 
   if (req.body.encodeType) encodeType = req.body.encodeType;
 
@@ -145,6 +152,7 @@ router.get('/computeFromShares', async (req, res, next) => {
     let option = JSON.parse(defaultOptions);
     option.url = domain + '/computeparty/raiseToKey';
     option.data.input = currentShares;
+    option.data.isUpdate = isUpdate;
     option.data.creatorDomain = creatorDomain;
     await axios(option)
       .then(function (response) {
@@ -159,12 +167,12 @@ router.get('/computeFromShares', async (req, res, next) => {
   let options = [];
 
 
-  cpDomains.forEach((CPDomain, i) => {
+  cpDomains.forEach((cpDomain, i) => {
     const option = JSON.parse(defaultOptions);
     option.method = "PUT";
-    option.url = CPDomain + "/computeparty/pushComputedShares";
-    option.data = { input: currentShares, CPDomain: config.domain };
-    option.domain = CPDomain;
+    option.url = cpDomain + "/computeparty/pushComputedShares";
+    option.data = { input: currentShares, cpDomain: config.domain };
+    option.domain = cpDomain;
     options.push(option);
   });
 
@@ -195,6 +203,7 @@ router.get('/computeFromShares', async (req, res, next) => {
             let randVal = oprf.generateRandomScalar();
             let share = randVal;
 
+            // TODO use new oprf functions for addition and subtraction
             cpShares.forEach((shares, cpIndex) => {
               share = oprf.sodium.crypto_core_ristretto255_add(share, shares[shareIndex]);
             });
@@ -206,19 +215,21 @@ router.get('/computeFromShares', async (req, res, next) => {
             return oprf.encodePoint(value, encodeType);
           });
 
-          // Write the masked and summed data to a table file that can be gotten upon request by querier
-          const dataToWrite = currentData.map(entry => {
-            return { 'ssn': entry };
-          });
+          if (isUpdate) {
+            // Write the masked and summed data to a table file that can be gotten upon request by querier
+            const dataToWrite = currentData.map(entry => {
+              return { 'ssn': entry };
+            });
 
-          const tableFilename = process.env.NODE_ENV + 'table' + creatorDomains.indexOf(creatorDomain) + '.csv';
-          let header = "";
-          if (!fs.existsSync(tableFilename)) {
-            header = csvStringifier.getHeaderString();
+            const tableFilename = process.env.NODE_ENV + 'table' + creatorDomains.indexOf(creatorDomain) + '.csv';
+            let header = "";
+            if (!fs.existsSync(tableFilename)) {
+              header = csvStringifier.getHeaderString();
+            }
+
+            const body = csvStringifier.stringifyRecords(dataToWrite);
+            fs.appendFileSync(tableFilename, header + body);
           }
-
-          const body = csvStringifier.stringifyRecords(dataToWrite);
-          fs.appendFileSync(tableFilename, header + body);
 
           res.status(200).json(currentData);
         }
@@ -233,23 +244,25 @@ router.get('/computeFromShares', async (req, res, next) => {
 
 // Need a CP ID (use cp domain for now)
 router.put('/pushComputedShares', (req, res, next) => {
-  const CPDomain = req.body.CPDomain;
+  const cpDomain = req.body.cpDomain;
 
-  cpShares[cpDomains.indexOf(CPDomain)] = req.body.input;
+  cpShares[cpDomains.indexOf(cpDomain)] = req.body.input;
 
   res.status(200).send("Share pushed!");
 });
 
-/*
+// Need a list creator id (use domain for now)
 router.get('/listData', (req, res, next) => {
+  const creatorDomain = req.body.creatorDomain;
+  const tableFilename = process.env.NODE_ENV + 'table' + creatorDomains.indexOf(creatorDomain) + '.csv';
 
-  const tableData = ingest.readCsv(req.body.fileName);
+  const tableData = ingest.readCsv(tableFilename);
   const result = tableData.map(entry => {
     return entry.ssn;
   });
 
   res.status(200).json(result);
-}); */
+});
 
 module.exports = {
   router: router
