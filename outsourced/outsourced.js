@@ -43,11 +43,14 @@ app.use(bodyParser.json({ limit: '50mb', extended: true }));
 const specs = swaggerJsdoc(swaggerOptions);
 app.use('/docs', swaggerUI.serve, swaggerUI.setup(specs));
 
-// const queryListRoute = require('./routes/query-list');
-// app.use('/querylist', queryListRoute);
+const queryListRoute = require('./routes/query-list');
+app.use('/querylist', queryListRoute.router);
 
 const computePartyRoute = require('./routes/compute-party');
 app.use('/computeparty', computePartyRoute.router);
+
+const listCreatorRoute = require('./routes/list-creator');
+app.use('/listcreator', listCreatorRoute.router);
 
 app.listen(config.port, () => {
   console.log("Listening on http://localhost:" + config.port);

@@ -122,9 +122,12 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
     });
 
   return { "shares": shares, "results": results };
-}
+};
 
-async function checkIfInList(input, cpDomains, creatorDomain) {
+router.get('/checkIfInList', async (req, res, next) => {
+  const input = req.body.input;
+  const cpDomains = req.body.cpDomains;
+  const creatorDomain = req.body.creatorDomain;
 
   const maskedInput = (await computeAndSendShares(input, cpDomains, creatorDomain)).results[0];
 
@@ -142,16 +145,12 @@ async function checkIfInList(input, cpDomains, creatorDomain) {
     }
   }
 
-  return unionIndexes;
+  res.status(200).json(unionIndexes);
+});
+
+
+module.exports = {
+  router: router,
+  computeAndSendShares: computeAndSendShares,
+  getTableData: getTableData
 }
-
-const dataGenerator = require('../../utils/data-generator');
-
-// (async () => {
-//   await oprf.ready;
-//   const res = await checkIfInList(dataGenerator.generateSsnArray(10), cpDomains, creatorDomains[0]);
-// })();
-
-module.exports.getTableData = getTableData;
-module.exports.computeAndSendShares = computeAndSendShares;
-module.exports.checkIfInList = checkIfInList;

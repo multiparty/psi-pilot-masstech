@@ -4,6 +4,7 @@ const OPRF = require('oprf');
 
 const dataGenerator = require('../../utils/data-generator');
 const axios = require('axios');
+const config = require('config');
 
 const encodeType = 'ASCII';
 const oprf = new OPRF();
@@ -13,9 +14,9 @@ const oprf = new OPRF();
  * @param  {string[]} input
  * Can do multiple
  */
-// TODO: Possibly split this into two functions so can be tested separately
-// TODO: have unique server identifier for this party (probably solved with config)
-async function computeAndSendShares(input, cpDomains, creatorDomain) {
+router.post('/computeAndSendShares', async (req, res, next) => {
+  const input = req.body.input;
+  const cpDomains = req.body.cpDomains;
 
   await oprf.ready;
 
@@ -58,7 +59,7 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
   // Possibly send some unique key for these requests to ensure that they're the same request
   var defaultOptions = {
     'method': 'GET',
-    'url': creatorDomain,
+    'url': config.domain,
     data:
     {
     },
@@ -73,7 +74,7 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
     option.url = domain + "/computeparty/computeFromShares";
     option.domain = domain;
     option.data.input = shares[i];
-    option.data.creatorDomain = creatorDomain;
+    option.data.creatorDomain = config.domain;
     option.data.isUpdate = true;
     options.push(option);
   });
@@ -95,14 +96,9 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
       console.log(error);
     });
 
+  res.status(200).json({ "shares": shares, "results": results });
+});
 
-  return { "shares": shares, "results": results };
+module.exports = {
+  router: router
 }
-
-// (async () => {
-//   await oprf.ready;
-//   const cpDomains = ["http://localhost:8000", "http://localhost:8001", "http://localhost:8002"];
-//   const res = await computeAndSendShares(dataGenerator.generateSsnArray(2), cpDomains);
-// })();
-
-module.exports.computeAndSendShares = computeAndSendShares;
