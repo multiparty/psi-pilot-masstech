@@ -15,7 +15,7 @@ const { describe } = require('yargs');
 const oprf = new OPRF();
 const holderKey = process.env.KEY;
 const encodeType = config.encodeType;
-const serverDomain = config.serverDomain;
+const serverDomain = config.holderDomain;
 
 const testFileName = config.fileName;
 
@@ -208,8 +208,9 @@ test('querylist/checkIfInList properly returns indexes of values in table', done
         console.log(error);
       });
 
+      console.log(config.domain);
     options.method = 'GET';
-    options.url = 'http://localhost:' + process.env.PORT + '/querylist/checkIfInList/';
+    options.url = config.domain + '/querylist/checkIfInList/';
     options.data = { input: queryList, secret: process.env.SHARED };
 
     // Call the client-side API to do a search of the table

@@ -19,7 +19,7 @@ function searchForEntries(queryData) {
 
   let options = {
     'method': 'GET',
-    'url': 'http://localhost:' + config.port + '/querylist/checkIfInList',
+    'url': config.domain + '/querylist/checkIfInList',
     data:
       { input: queryList, secret: process.env.SHARED },
     responseType: 'json'
@@ -70,7 +70,7 @@ function createNewList(dataSize) {
 
   let options = {
     method: 'POST',
-    url: 'http://localhost:' + config.port + '/listholder/arrayUpdate',
+    url: config.domain + '/listholder/arrayUpdate',
     data: { input: data },
     responseType: 'json'
   };
@@ -86,7 +86,7 @@ function createNewList(dataSize) {
 
 
 
-if (args.client) {
+if (args.querier) {
   let queryData = [];
 
   if (config.queryData) {
@@ -96,7 +96,7 @@ if (args.client) {
   }
 
   searchForEntries(queryData);
-} else if (args.server) {
+} else if (args.holder) {
   // Make sure you are using a new file
   if (fs.existsSync('./' + config.fileName)) {
     fs.unlinkSync('./' + config.fileName);

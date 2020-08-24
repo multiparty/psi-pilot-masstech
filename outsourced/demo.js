@@ -55,14 +55,13 @@ function searchForEntries(queryData) {
 }
 
 /**
- * Makes a list holder request to create a new table with both randomly generated, and selected data
+ * Makes a list creator request to create a new table with both randomly generated, and selected data
  * @param  {int} dataSize - Size of the table to be created
  */
 function createNewList(dataSize) {
 
   let data = [];
   if (config.tableData) {
-    console.log(config.tableData);
     for (let i = 0; i < config.tableData.length; i++) {
       const randVal = Math.floor(Math.random() * (dataSize - data.length));
       data = data.concat(dataGenerator.generateSsnArray(randVal, true));
@@ -90,7 +89,7 @@ function createNewList(dataSize) {
 
 
 
-if (args.client) {
+if (args.query) {
   let queryData = [];
 
   if (config.queryData) {
@@ -101,7 +100,7 @@ if (args.client) {
   }
 
   searchForEntries(queryData);
-} else if (args.server) {
+} else if (args.create) {
 
   let dataSize = 1000;
   if (config.dataSize) {
