@@ -47,12 +47,54 @@ function resetCPShares() {
 
 resetCPShares();
 
-// Takes in encoded version of a point, decodes it, raises it, re-encodes it
-// optional encodeType
-// Input is a list of values to be raised to this CP's key
-// Also requires the list creator's ID (for now just using domain);
-// check if -1 not in the list, if not, then the key is not fresh
-// A -1 being in the list implies that someone else needs your key, if there are no -1's no one needs your current key and therefore it is old
+/**
+ * @swagger
+ * tags:
+ *   name: Compute Party
+ *   description: Performing MPC and answering list queries
+ */
+
+/**
+ * @swagger
+ * path:
+ *  /computeparty/raiseToKey:
+ *    get:
+ *      summary: Raises list of values to the compute party's current key and returns them
+ *      tags: [Compute Party]
+ *      parameters:
+ *       - in: body
+ *         name: To-Be-Raised
+ *         schema:
+ *           type: object
+ *           required:
+ *            - input
+ *            - creatorDomain
+ *            - isUpdate
+ *           properties:
+ *             input:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: Encoded points to be raised to compute party's key
+ *             creatorDomain:
+ *               type: string
+ *               description: Domain of the creator whose list these values will be appended to/queried against
+ *             isUpdate:
+ *               type: Boolean
+ *               description: Whether this is a list update or a query
+ *      responses:
+ *        "400":
+ *          description: Invalid creator domain.  That creator does not have a list with this compute party
+ *        "200":
+ *          description: Values were raised to compute party's key
+ *          schema:
+ *            type: array
+ *            items:
+ *              type: string
+ *              description: values raised to both the compute party's key
+ *            example:
+ *              [ " rã\u0004\\ÉtÝè³\u000e¯nEu0018Å÷¹\tóv2£z\u0006«Ë?ì}", "¤vcÑ\u0017\u0014'ièèã1Q)Ë-jú{ÍµW§)Öà*\u0010", "ú9e\u001dJ=ÀÓJË3\u0005õ\n_Aí(Íib4\u000eÈNãx3", ... ]
+ */
 router.get('/raiseToKey', (req, res, next) => {
   const input = req.body.input;
   const creatorDomain = req.body.creatorDomain;
@@ -61,6 +103,7 @@ router.get('/raiseToKey', (req, res, next) => {
   if (req.body.encodeType) encodeType = req.body.encodeType;
 
   function waitForFreshKey() {
+    // A -1 being in the list implies that someone else needs your key, if there are no -1's no one needs your current key and therefore it is old
     if (!isUpdate || cpShares.includes(-1)) {
       const keyIndex = creatorDomains.indexOf(creatorDomain);
 
@@ -87,11 +130,43 @@ router.get('/raiseToKey', (req, res, next) => {
   waitForFreshKey();
 });
 
-// Receives a list of shares to be masked and summed
-// Returns the final calculation
-// Needs to be told the other parties at some point (config file)
-// need to be sent the creator's identifier
-// Uses isUpdate to determine whether this is a interseciton check or a list update
+/**
+ * @swagger
+ * path:
+ *  /computeparty/computeFromShares:
+ *    get:
+ *      summary: Calculates the original value of the shares received raised to each compute party's key, writes to a file if it is a list update
+ *      tags: [Compute Party]
+ *      parameters:
+ *       - in: body
+ *         name: Share-Info
+ *         schema:
+ *           type: object
+ *           required:
+ *            - input
+ *            - creatorDomain
+ *            - isUpdate
+ *           properties:
+ *             input:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: Shares of hashed oprf points generated from list creator's data
+ *             creatorDomain:
+ *               type: string
+ *               description: Domain of the creator whose list these values are being appended to/queried against
+ *             isUpdate:
+ *               type: Boolean
+ *               description: Whether this is a list update or a query
+ *      responses:
+ *        "200":
+ *          description: Shares were calculated correctly
+ *          schema:
+ *            type: array
+ *            items:
+ *              type: string
+ *              description: Sum of all of the shares sent to comopute parties raised to every compute party's key
+ */
 router.get('/computeFromShares', async (req, res, next) => {
   await oprf.ready;
 
@@ -242,7 +317,34 @@ router.get('/computeFromShares', async (req, res, next) => {
     });
 });
 
-// Need a CP ID (use cp domain for now)
+/**
+ * @swagger
+ * path:
+ *  /computeparty/pushComputedShares:
+ *    put:
+ *      summary: Places computed shares to this compute party so that they can be added together
+ *      tags: [Compute Party]
+ *      parameters:
+ *       - in: body
+ *         name: Push-Data
+ *         schema:
+ *           type: object
+ *           required:
+ *            - input
+ *            - cpDomain
+ *           properties:
+ *             input:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: Shares calculated by another compute party being sent to this compute party
+ *             cpDomain:
+ *               type: string
+ *               description: Domain of the cp sending these shares
+ *      responses:
+ *        "200":
+ *          description: Shares were pushed to this compute party successfully
+ */
 router.put('/pushComputedShares', (req, res, next) => {
   const cpDomain = req.body.cpDomain;
 
@@ -251,7 +353,35 @@ router.put('/pushComputedShares', (req, res, next) => {
   res.status(200).send("Share pushed!");
 });
 
-// Need a list creator id (use domain for now)
+/**
+ * @swagger
+ * path:
+ *  /computeparty/listData:
+ *    get:
+ *      summary: Returns the data stored in a list for the given creator
+ *      tags: [Compute Party]
+ *      parameters:
+ *       - in: body
+ *         name: List-Query
+ *         schema:
+ *           type: object
+ *           required:
+ *            - creatorDomain
+ *           properties:
+ *             creatorDomain:
+ *               type: string
+ *               description: Domain of the creator whose list is being queried
+ *           example:
+ *             creatorDomain: "http://localhost:3000"
+ *      responses:
+ *        "200":
+ *          description: Table data returned
+ *          schema:
+ *            type: array
+ *            items:
+ *              type: string
+ *              description: Array of the entries on the creator's list
+ */
 router.get('/listData', (req, res, next) => {
   const creatorDomain = req.body.creatorDomain;
   const tableFilename = process.env.NODE_ENV + 'table' + creatorDomains.indexOf(creatorDomain) + '.csv';

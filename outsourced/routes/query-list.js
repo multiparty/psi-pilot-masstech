@@ -17,7 +17,11 @@ const creatorDomains = [
   "http://localhost:3001",
   "http://localhost:3002"
 ]
-
+/**
+ * Makes a request to one of the compute parties in order to get the stored list data
+ * @param  {String} creatorDomain Domain of creator whose list data will be gotten from
+ * @returns {String[]} Values that were stored in creatorDomain's list
+ */
 async function getTableData(creatorDomain) {
   var options = {
     method: 'GET',
@@ -41,6 +45,13 @@ async function getTableData(creatorDomain) {
   return result;
 }
 
+/**
+ * Creates shares out of the input and sends them to compute parties to be raised to their keys and resummed
+ * @param  {String[]} input Plaintext data to be checked against creatorDomain's list
+ * @param  {String[]} cpDomains Domains of all compute parties involved in the calculation of creatorDomain's list
+ * @param  {String} creatorDomain Domain of creator whose list is being queried
+ * @returns {Object} Returns the shares that were calculated originally, and the results of having the compute parties raise them to their keys and sum them.
+ */
 async function computeAndSendShares(input, cpDomains, creatorDomain) {
 
   await oprf.ready;
@@ -124,6 +135,56 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
   return { "shares": shares, "results": results };
 };
 
+/**
+ * @swagger
+ * tags:
+ *   name: Query List
+ *   description: Queries compute parties about list data
+ */
+
+/**
+ * @swagger
+ * path:
+ *  /querylist/checkIfInList:
+ *    get:
+ *      summary: Finds the intersection between the input and a specified list creator's list
+ *      tags: [Query List]
+ *      parameters:
+ *       - in: body
+ *         name: Query-Data
+ *         schema:
+ *           type: object
+ *           required:
+ *            - input
+ *            - creatorDomain
+ *            - cpDomains
+ *           properties:
+ *             input:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: Plaintext information to be checked if it is in the specified list
+ *             creatorDomain:
+ *               type: string
+ *               description: Domain of the creator whose list should be queried
+ *             cpDomains:
+ *               type: string
+ *               description: Domains of all of the compute parties used to create the specified list
+ *           example:
+ *             input: [ "198488954", "654823719", "495782631", ... ]
+ *             creatorDomain: "http://localhost:8000"
+ *             cpDomains: [ "http://localhost:3000", "http://localhost:3001", "http://localhost:3002" ]
+ *      responses:
+ *        "200":
+ *          description: Values were raised to compute party's key
+ *          schema:
+ *            type: array
+ *            items:
+ *              type: int
+ *              description: indexes of the values of input that were found in the list
+ *            example:
+ *              [ 22, 43, 188, 212, ... ]
+ */
 router.get('/checkIfInList', async (req, res, next) => {
   const input = req.body.input;
   const cpDomains = req.body.cpDomains;

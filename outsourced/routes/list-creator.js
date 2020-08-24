@@ -9,10 +9,54 @@ const config = require('config');
 const encodeType = 'ASCII';
 const oprf = new OPRF();
 
+/**
+ * @swagger
+ * tags:
+ *   name: List Creator
+ *   description: Creating and updating lists
+ */
 
 /**
- * @param  {string[]} input
- * Can do multiple
+ * @swagger
+ * path:
+ *  /listcreator/computeAndSendShares:
+ *    post:
+ *      summary: Divides a list of input into shares and distributes it to compute parties for them to create/update their list
+ *      tags: [List Creator]
+ *      parameters:
+ *       - in: body
+ *         name: Compute-And-Send-Shares
+ *         schema:
+ *           type: object
+ *           required:
+ *            - input
+ *            - cpDomains
+ *           properties:
+ *             input:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: SSNs to be appended to list
+ *             cpDomains:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: Domains of all of the compute parties
+ *           example:
+ *             input: [ "123456789", "987654321", "443256598" ]
+ *             cpDomains: [ "http://localhost:3000", "http://localhost:3001" ]
+ *      responses:
+ *        "200":
+ *          description: Values were calculated correctly
+ *          schema:
+ *            type: object
+ *            properties:
+ *              shares:
+ *                type: string
+ *                description: The shares created by the list creator and sent out to the compute parties
+ *              results:
+ *                type: string
+ *                description: Final sum of the shares raised to every CP's key
  */
 router.post('/computeAndSendShares', async (req, res, next) => {
   const input = req.body.input;
