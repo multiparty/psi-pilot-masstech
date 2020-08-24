@@ -1,11 +1,7 @@
 {
+  "domain": "http://localhost:3000",
   "encodeType": "ASCII",
   "port": "3000",
-  "domain": "http://localhost:3000",
-  "holderDomain": "http://localhost:3000",
-  "fileName": "table.csv",
-  "display": false,
-  "dataSize": 1000,
   "queryData": [
     {
       "ssn": "912622018",
@@ -58,11 +54,11 @@
       "address": "64671 Angelo Trail Suite 168, Fredachester, Wisconsin 38579-9459"
     }
   ],
-  "tableData": [
-    "490051413",
-    "446223036",
-    "641239277",
-    "197573585",
-    "768558506"
+  "holderDomain": "http://localhost:8080",
+  "fileName": "table.csv",
+  "creatorDomains": [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002"
   ]
 }
