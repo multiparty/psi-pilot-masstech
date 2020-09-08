@@ -8,7 +8,7 @@ const config = require('config');
 
 let encodeType = config.encodeType;
 let port = config.port;
-let holderDomain = config.serverDomain;
+let holderDomain = config.holderDomain;
 const oprf = new OPRF();
 
 /**
@@ -56,6 +56,14 @@ async function maskWithHolderKey(input, key, secret) {
   return axios(options)
     .then(function (response) {
       const result = response.data.map(entry => {
+
+        if(config.display) {
+          console.log("--------------------------------");
+          console.log("Data masked with just list holder's key: ");
+          console.log(result);
+          console.log("--------------------------------");
+        }
+
         return oprf.encodePoint(oprf.unmaskPoint(oprf.decodePoint(entry, encodeType), key), encodeType);
       });
 

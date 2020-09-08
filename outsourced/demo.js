@@ -10,6 +10,9 @@ const config = require('config');
 const fs = require('fs');
 const dataGenerator = require('../utils/data-generator');
 
+const creatorDomains = config.creatorDomains;
+const cpDomains = config.computePartyDomains;
+
 /**
  * Makes a query request to see if any individuals in queryData are in the table and displays their information
  * @param  {Object[]} queryData - Information about individuals being searched against the table
@@ -19,9 +22,9 @@ function searchForEntries(queryData) {
 
   let options = {
     'method': 'GET',
-    'url': config.domain + '/querylist/checkIfInList',
+    'url': creatorDomains[1] + '/querylist/checkIfInList',
     data:
-      { input: queryList, secret: process.env.SHARED },
+      { input: queryList, creatorDomain: creatorDomains[0], cpDomains: cpDomains },
     responseType: 'json'
   };
 
@@ -52,7 +55,7 @@ function searchForEntries(queryData) {
 }
 
 /**
- * Makes a list holder request to create a new table with both randomly generated, and selected data
+ * Makes a list creator request to create a new table with both randomly generated, and selected data
  * @param  {int} dataSize - Size of the table to be created
  */
 function createNewList(dataSize) {
@@ -70,8 +73,8 @@ function createNewList(dataSize) {
 
   let options = {
     method: 'POST',
-    url: config.domain + '/listholder/arrayUpdate',
-    data: { input: data },
+    url: creatorDomains[0] + '/listcreator/computeAndSendShares',
+    data: { input: data, cpDomains: cpDomains },
     responseType: 'json'
   };
 
@@ -86,21 +89,18 @@ function createNewList(dataSize) {
 
 
 
-if (args.querier) {
+if (args.query) {
   let queryData = [];
 
   if (config.queryData) {
     queryData = config.queryData;
+    console.log(queryData);
   } else {
     queryData = dataGenerator.generateData(15, false);
   }
 
   searchForEntries(queryData);
-} else if (args.holder) {
-  // Make sure you are using a new file
-  if (fs.existsSync('./' + config.fileName)) {
-    fs.unlinkSync('./' + config.fileName);
-  }
+} else if (args.create) {
 
   let dataSize = 1000;
   if (config.dataSize) {

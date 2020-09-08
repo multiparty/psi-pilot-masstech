@@ -114,4 +114,6 @@ config/*
 p2p/config/*
 !p2p/config/default.json
 outsourced/config/*
-!outsourced/config/default.json
+!outsouced/config/default.json
+
+!config/default.json
