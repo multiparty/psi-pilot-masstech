@@ -1,16 +1,14 @@
 require('dotenv').config()
 
-const axios = require('axios');
 const express = require('express');
 const bodyParser = require('body-parser');
 const args = require('yargs').argv;
+// Set NODE_ENV to the name of the config file, which loads it
 if (args.config) {
   process.env.NODE_ENV = args.config;
 }
 
 const config = require('config');
-const fs = require('fs');
-const dataGenerator = require('../utils/data-generator');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUI = require('swagger-ui-express');
 
@@ -34,7 +32,7 @@ const swaggerOptions = {
 }
 
 const app = express();
-app.use(bodyParser.json({ limit: '50mb', extended: true }));
+app.use(bodyParser.json({limit: '50mb', extended: true}));
 
 const specs = swaggerJsdoc(swaggerOptions);
 app.use('/docs', swaggerUI.serve, swaggerUI.setup(specs));

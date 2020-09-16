@@ -6,12 +6,12 @@ const ingest = require('../../utils/ingest');
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
 const config = require('config');
 
-const encodeType = config.encodeType;
+let encodeType = config.encodeType;
 let fileName = config.fileName;
 const oprf = new OPRF();
 const csvStringifier = createCsvStringifier({
   header: [
-    { id: 'ssn', title: 'SSN' },
+    {id: 'ssn', title: 'SSN'},
   ]
 });
 
@@ -26,7 +26,7 @@ const csvStringifier = createCsvStringifier({
  * Changes the active list being edited to newName
  * @param  {String} newName - Name of file to begin writing to/reading from
  */
-function changeListname (newName) {
+function changeListname(newName) {
   fileName = newName;
   return fileName;
 }
@@ -63,7 +63,9 @@ function changeListname (newName) {
  */
 router.post('/arrayUpdate', (req, res, next) => {
   const input = req.body.input;
-  if (req.body.encodeType) encodeType = req.body.encodeType;
+  if (req.body.encodeType) {
+    encodeType = req.body.encodeType;
+  }
 
   oprf.ready.then(function () {
     const key = oprf.decodePoint(process.env.KEY, encodeType);
@@ -71,7 +73,7 @@ router.post('/arrayUpdate', (req, res, next) => {
     const dataToWrite = input.map(entry => {
       const maskedEntry = oprf.scalarMult(oprf.hashToPoint(entry), key);
       const encodedEntry = oprf.encodePoint(maskedEntry, encodeType);
-      return { 'ssn': encodedEntry }
+      return {'ssn': encodedEntry}
     });
 
     let header = "";
@@ -198,6 +200,6 @@ router.get('/listdata', (req, res, next) => {
 });
 
 module.exports = {
-  router:router,
-  changeListname:changeListname
+  router: router,
+  changeListname: changeListname
 }
