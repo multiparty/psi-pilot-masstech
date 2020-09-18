@@ -22,7 +22,7 @@ function searchForEntries(queryData) {
 
   let options = {
     'method': 'GET',
-    'url': creatorDomains[1] + '/querylist/checkIfInList',
+    'url': creatorDomains[0] + '/querylist/checkIfInList',
     data:
       { input: queryList, creatorDomain: creatorDomains[0], cpDomains: cpDomains },
     responseType: 'json'

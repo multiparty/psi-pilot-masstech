@@ -110,10 +110,9 @@ generated-data.csv
 *.csv
 
 config/*
-# Config files
-p2p/config/*
-!p2p/config/default.json
-outsourced/config/*
-!outsouced/config/default.json
-
 !config/default.json
+# Config files
+src/p2p/config/*
+src/!p2p/config/default.json
+src/outsourced/config/*
+src/!outsouced/config/default.json
