@@ -43,6 +43,6 @@ app.use('/listholder', listUpdateRoute.router);
 const queryListRoute = require('./routes/query-list');
 app.use('/querylist', queryListRoute.router);
 
-app.listen(config.port, () => {
-  console.log("Listening on http://localhost:" + config.port);
+app.listen(config.domain.split(':')[2], () => {
+  console.log("Listening on http://localhost:" + config.domain.split(':')[2]);
 });

@@ -37,7 +37,7 @@ First you have to get all of your servers running.  Run the command `node outsou
 ## Demo Steps ##
 
 ### Required Files ###
-Running the demo requires the same files as running the test except you do not need the "testKeys" arrays in the config files, nor do you need the "test.json" config file.  You will also need to create a demo file that contains the two lists of domains, and a queryData object and tableData list in the same vein as with the P2P implementation.  The overlap of these two lists should end up being what displays.
+Look at the *.example.json files in the config folder for a potential configuration. In this instance we have one data contributor, one query party, and two compute parties.
 
 ### Running the Demo ###
-First run all of your servers again.  For both creators and compute parties, you will just run `node outsourced.js --config=configFile` replacing `configFile` with their respective config file names.  Now just run these two commands: `node demo.js --create --config=demoConfigFileName` and `node demo.js --query --config=demoConfigFileName`
+First run all of your servers again. For all data holders, compute parties, and query parties, you will just run `node outsourced.js --config=configFile` replacing `configFile` with their respective config file names. Run the following command to distribute the secret shares between the compute parties: `node demo.js --create --config=data1.example`. At this point you can terminate the data server. Finally have the query party server connect to the compute parties to find the overlap in records: `node demo.js --query --config=query1.example`.

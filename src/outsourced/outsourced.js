@@ -52,7 +52,7 @@ app.use('/computeparty', computePartyRoute.router);
 const listCreatorRoute = require('./routes/list-creator');
 app.use('/listcreator', listCreatorRoute.router);
 
-app.listen(config.port, () => {
-  console.log("Listening on http://localhost:" + config.port);
+app.listen(config.domain.split(':')[2], () => {
+  console.log("Listening on http://localhost:" + config.domain.split(':')[2]);
   console.log(process.env.NODE_ENV);
 });

@@ -9,19 +9,19 @@ const axios = require('axios');
 const args = require('yargs').argv;
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
 
-const encodeType = config.encodeType;
+let encodeType = config.encodeType;
 const cpDomains = config.computePartyDomains;
-const creatorDomains = config.creatorDomains;
+const dataDomains = config.dataDomains;
 // One key is needed for every list creator
 let keys = [];
 const oprf = new OPRF();
 oprf.ready.then(() => {
   if (args.test) {
-    keys = creatorDomains.map(creatorDomain => {
+    keys = dataDomains.map(dataDomain => {
       return oprf.hashToPoint(config.testKeys.pop());
     });
   } else {
-    keys = creatorDomains.map(creatorDomain => {
+    keys = dataDomains.map(dataDomain => {
       return oprf.generateRandomScalar();
     });
   }
@@ -29,12 +29,12 @@ oprf.ready.then(() => {
 
 const csvStringifier = createCsvStringifier({
   header: [
-    { id: 'ssn', title: 'SSN' },
+    {id: 'ssn', title: 'SSN'},
   ]
 });
 const plainShareStringifier = createCsvStringifier({
   header: [
-    { id: 'share', title: 'SHARE' },
+    {id: 'share', title: 'SHARE'},
   ]
 });
 let cpShares = [];
@@ -68,7 +68,7 @@ resetCPShares();
  *           type: object
  *           required:
  *            - input
- *            - creatorDomain
+ *            - dataDomain
  *            - isUpdate
  *           properties:
  *             input:
@@ -76,7 +76,7 @@ resetCPShares();
  *               items:
  *                 type: string
  *                 description: Encoded points to be raised to compute party's key
- *             creatorDomain:
+ *             dataDomain:
  *               type: string
  *               description: Domain of the creator whose list these values will be appended to/queried against
  *             isUpdate:
@@ -97,7 +97,7 @@ resetCPShares();
  */
 router.get('/raiseToKey', (req, res, next) => {
   const input = req.body.input;
-  const creatorDomain = req.body.creatorDomain;
+  const dataDomain = req.body.dataDomain;
   const isUpdate = req.body.isUpdate;
 
   if (req.body.encodeType) encodeType = req.body.encodeType;
@@ -105,12 +105,12 @@ router.get('/raiseToKey', (req, res, next) => {
   function waitForFreshKey() {
     // A -1 being in the list implies that someone else needs your key, if there are no -1's no one needs your current key and therefore it is old
     if (!isUpdate || cpShares.includes(-1)) {
-      const keyIndex = creatorDomains.indexOf(creatorDomain);
+      const keyIndex = dataDomains.indexOf(dataDomain);
 
-      // Key was not found for specified creatorDomain
-      if (keyIndex == -1) {
-        console.log("Key not found error!");
-        res.status(400).send("Invalid creator domain sent in request.  No key listed for creator domain " + creatorDomain + ".");
+      // Key was not found for specified dataDomain
+      if (keyIndex === -1) {
+        console.log('Key not found error!');
+        res.status(400).send('Invalid creator domain sent in request. No key listed for creator domain ' + dataDomain + '.');
       }
 
       oprf.ready.then(function () {
@@ -144,7 +144,7 @@ router.get('/raiseToKey', (req, res, next) => {
  *           type: object
  *           required:
  *            - input
- *            - creatorDomain
+ *            - dataDomain
  *            - isUpdate
  *           properties:
  *             input:
@@ -152,7 +152,7 @@ router.get('/raiseToKey', (req, res, next) => {
  *               items:
  *                 type: string
  *                 description: Shares of hashed oprf points generated from list creator's data
- *             creatorDomain:
+ *             dataDomain:
  *               type: string
  *               description: Domain of the creator whose list these values are being appended to/queried against
  *             isUpdate:
@@ -171,14 +171,14 @@ router.get('/computeFromShares', async (req, res, next) => {
   await oprf.ready;
 
   const isUpdate = req.body.isUpdate;
-  const creatorDomain = req.body.creatorDomain;
+  const dataDomain = req.body.dataDomain;
   let input = req.body.input;
 
   if (isUpdate) {
     if (args.test) {
-      keys[creatorDomains.indexOf(creatorDomain)] = oprf.hashToPoint(config.testKeys.pop());
+      keys[dataDomains.indexOf(dataDomain)] = oprf.hashToPoint(config.testKeys.pop());
     } else {
-      keys[creatorDomains.indexOf(creatorDomain)] = oprf.generateRandomScalar();
+      keys[dataDomains.indexOf(dataDomain)] = oprf.generateRandomScalar();
     }
   }
 
@@ -187,11 +187,11 @@ router.get('/computeFromShares', async (req, res, next) => {
   if (isUpdate) {
     // Store the new shares sent to you so that you have them for the next request
     const dataToWrite = input.map(entry => {
-      return { 'share': entry };
+      return {'share': entry};
     });
 
-    const shareFileName = process.env.NODE_ENV + 'shares' + creatorDomains.indexOf(creatorDomain) + '.csv';
-    let header = "";
+    const shareFileName = process.env.NODE_ENV + 'shares' + dataDomains.indexOf(dataDomain) + '.csv';
+    let header = '';
     if (!fs.existsSync(shareFileName)) {
       header = plainShareStringifier.getHeaderString();
     }
@@ -206,15 +206,17 @@ router.get('/computeFromShares', async (req, res, next) => {
     });
   }
 
-  if (req.body.encodeType) encodeType = req.body.encodeType;
+  if (req.body.encodeType) {
+    encodeType = req.body.encodeType;
+  }
 
   var defaultOptions = {
     'method': 'GET',
     'url': 'http://localhost:3000',
     data:
-    {
-      input: input[0]
-    },
+      {
+        input: input[0]
+      },
     responseType: 'json'
   };
 
@@ -228,7 +230,7 @@ router.get('/computeFromShares', async (req, res, next) => {
     option.url = domain + '/computeparty/raiseToKey';
     option.data.input = currentShares;
     option.data.isUpdate = isUpdate;
-    option.data.creatorDomain = creatorDomain;
+    option.data.dataDomain = dataDomain;
     await axios(option)
       .then(function (response) {
         currentShares = response.data;
@@ -244,9 +246,9 @@ router.get('/computeFromShares', async (req, res, next) => {
 
   cpDomains.forEach((cpDomain, i) => {
     const option = JSON.parse(defaultOptions);
-    option.method = "PUT";
-    option.url = cpDomain + "/computeparty/pushComputedShares";
-    option.data = { input: currentShares, cpDomain: config.domain };
+    option.method = 'PUT';
+    option.url = cpDomain + '/computeparty/pushComputedShares';
+    option.data = {input: currentShares, cpDomain: config.domain};
     option.domain = cpDomain;
     options.push(option);
   });
@@ -293,11 +295,11 @@ router.get('/computeFromShares', async (req, res, next) => {
           if (isUpdate) {
             // Write the masked and summed data to a table file that can be gotten upon request by querier
             const dataToWrite = currentData.map(entry => {
-              return { 'ssn': entry };
+              return {'ssn': entry};
             });
 
-            const tableFilename = process.env.NODE_ENV + 'table' + creatorDomains.indexOf(creatorDomain) + '.csv';
-            let header = "";
+            const tableFilename = process.env.NODE_ENV + 'table' + dataDomains.indexOf(dataDomain) + '.csv';
+            let header = '';
             if (!fs.existsSync(tableFilename)) {
               header = csvStringifier.getHeaderString();
             }
@@ -350,7 +352,7 @@ router.put('/pushComputedShares', (req, res, next) => {
 
   cpShares[cpDomains.indexOf(cpDomain)] = req.body.input;
 
-  res.status(200).send("Share pushed!");
+  res.status(200).send('Share pushed!');
 });
 
 /**
@@ -366,13 +368,13 @@ router.put('/pushComputedShares', (req, res, next) => {
  *         schema:
  *           type: object
  *           required:
- *            - creatorDomain
+ *            - dataDomain
  *           properties:
- *             creatorDomain:
+ *             dataDomain:
  *               type: string
  *               description: Domain of the creator whose list is being queried
  *           example:
- *             creatorDomain: "http://localhost:3000"
+ *             dataDomain: "http://localhost:3000"
  *      responses:
  *        "200":
  *          description: Table data returned
@@ -383,8 +385,8 @@ router.put('/pushComputedShares', (req, res, next) => {
  *              description: Array of the entries on the creator's list
  */
 router.get('/listData', (req, res, next) => {
-  const creatorDomain = req.body.creatorDomain;
-  const tableFilename = process.env.NODE_ENV + 'table' + creatorDomains.indexOf(creatorDomain) + '.csv';
+  const dataDomain = req.body.dataDomain;
+  const tableFilename = process.env.NODE_ENV + 'table' + dataDomains.indexOf(dataDomain) + '.csv';
 
   const tableData = ingest.readCsv(tableFilename);
   const result = tableData.map(entry => {

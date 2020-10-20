@@ -7,10 +7,9 @@ if (args.config) {
 
 const axios = require('axios');
 const config = require('config');
-const fs = require('fs');
 const dataGenerator = require('../utils/data-generator');
 
-const creatorDomains = config.creatorDomains;
+const dataDomains = config.dataDomains;
 const cpDomains = config.computePartyDomains;
 
 /**
@@ -22,9 +21,9 @@ function searchForEntries(queryData) {
 
   let options = {
     'method': 'GET',
-    'url': creatorDomains[0] + '/querylist/checkIfInList',
+    'url': config.domain + '/querylist/checkIfInList',
     data:
-      { input: queryList, creatorDomain: creatorDomains[0], cpDomains: cpDomains },
+      {input: queryList, dataDomain: dataDomains[0], cpDomains: cpDomains},
     responseType: 'json'
   };
 
@@ -73,8 +72,8 @@ function createNewList(dataSize) {
 
   let options = {
     method: 'POST',
-    url: creatorDomains[0] + '/listcreator/computeAndSendShares',
-    data: { input: data, cpDomains: cpDomains },
+    url: dataDomains[0] + '/listcreator/computeAndSendShares',
+    data: {input: data, cpDomains: cpDomains},
     responseType: 'json'
   };
 
@@ -86,7 +85,6 @@ function createNewList(dataSize) {
       console.log(error);
     });
 }
-
 
 
 if (args.query) {

@@ -1,23 +1,13 @@
 {
   "encodeType": "ASCII",
-  "domain": "http://localhost:3000",
   "fileName": "table",
+  "domain": "http://localhost:3001",
   "computePartyDomains": [
     "http://localhost:8000",
-    "http://localhost:8001",
-    "http://localhost:8002"
+    "http://localhost:8001"
   ],
   "dataDomains": [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002"
-  ],
-  "testKeys": [
-    "392014839023492",
-    "490529805911903",
-    "940592803102334",
-    "38204852103294",
-    "450932485923042"
+    "http://localhost:3000"
   ],
   "dataSize": 1000,
   "queryData": [
@@ -71,12 +61,5 @@
       "name": "Little, Jimmie",
       "address": "64671 Angelo Trail Suite 168, Fredachester, Wisconsin 38579-9459"
     }
-  ],
-  "tableData": [
-    "490051413",
-    "446223036",
-    "641239277",
-    "197573585",
-    "768558506"
   ]
 }

@@ -17,7 +17,7 @@ const oprf = new OPRF();
 process.env.NODE_ENV = "testing";
 const config = require('config');
 const cpDomains = config.computePartyDomains;
-const creatorDomains = config.creatorDomains;
+const dataDomains = config.dataDomains;
 const encodeType = config.encodeType;
 const cpKeys = config.testKeys
 
@@ -49,13 +49,13 @@ test('Compute parties raise to key properly', done => {
 
     const key = oprf.hashToPoint(cpKeys[0].pop());
     // Pop off all of the original keys because they will be replaced going forward
-    for (let i = 0; i < config.creatorDomains.length - 1; i++) {
+    for (let i = 0; i < config.dataDomains.length - 1; i++) {
       cpKeys[0].pop();
     }
 
     cpKeys.forEach(keyList => {
       if (keyList != cpKeys[0]) {
-        config.creatorDomains.forEach(domain => {
+        config.dataDomains.forEach(domain => {
           keyList.pop();
         });
       }
@@ -73,7 +73,7 @@ test('Compute parties raise to key properly', done => {
 
     option.method = 'GET';
     option.url = cpDomains[0] + '/computeparty/raiseToKey';
-    option.data = { input: data, creatorDomain: creatorDomains[0] }
+    option.data = { input: data, dataDomain: dataDomains[0] }
 
     axios(option)
       .then(function (response) {
@@ -94,7 +94,7 @@ test('List holder properly calculates shares to be sent out', done => {
     const input = dataGenerator.generateSsnArray(dataSize);
 
     let option = JSON.parse(defaultOptions);
-    option.url = creatorDomains[0] + '/listcreator/computeAndSendShares';
+    option.url = dataDomains[0] + '/listcreator/computeAndSendShares';
     option.data.input = input;
     option.data.cpDomains = cpDomains;
 
@@ -138,7 +138,7 @@ test('Querier properly calculates shares to be sent out', done => {
     const input = dataGenerator.generateSsnArray(dataSize);
 
     // Shares is a 2D array that his cpDomains x input size large
-    const shares = (await querier.computeAndSendShares(input, cpDomains, creatorDomains[0])).shares;
+    const shares = (await querier.computeAndSendShares(input, cpDomains, dataDomains[0])).shares;
 
     const correct = input.map(ssn => {
       return oprf.hashToPoint(ssn);
@@ -171,7 +171,7 @@ test('CPs all calculate the same data for list creator', done => {
     lastKeys = keys;
 
     let option = JSON.parse(defaultOptions);
-    option.url = creatorDomains[0] + '/listcreator/computeAndSendShares';
+    option.url = dataDomains[0] + '/listcreator/computeAndSendShares';
     option.data.input = input;
     option.data.cpDomains = cpDomains;
 
@@ -203,7 +203,7 @@ test('CPs all calculate the same data for querier', done => {
     const input = dataGenerator.generateSsnArray(dataSize);
     const keys = lastKeys;
 
-    const queryResult = await querier.computeAndSendShares(input, cpDomains, creatorDomains[0])
+    const queryResult = await querier.computeAndSendShares(input, cpDomains, dataDomains[0])
     const shares = queryResult.shares;
     const answers = queryResult.results;
 
@@ -230,7 +230,7 @@ test('CPs properly calculate masked data for single party', done => {
     lastKeys = keys;
 
     let option = JSON.parse(defaultOptions);
-    option.url = creatorDomains[0] + '/listcreator/computeAndSendShares';
+    option.url = dataDomains[0] + '/listcreator/computeAndSendShares';
     option.data.input = input;
     option.data.cpDomains = cpDomains;
 
@@ -266,7 +266,7 @@ test('CPs properly calculate masked data for single query', done => {
     // Use the keys last used by the list creators
     const keys = lastKeys
 
-    const queryResult = await querier.computeAndSendShares(input, cpDomains, creatorDomains[0])
+    const queryResult = await querier.computeAndSendShares(input, cpDomains, dataDomains[0])
     const shares = queryResult.shares;
     const answers = queryResult.results;
 
@@ -295,7 +295,7 @@ test('CPs properly calculate masked data for multiple parties', done => {
     });
 
     let option = JSON.parse(defaultOptions);
-    option.url = creatorDomains[0] + '/listcreator/computeAndSendShares';
+    option.url = dataDomains[0] + '/listcreator/computeAndSendShares';
     option.data.input = input1;
     option.data.cpDomains = cpDomains;
 
@@ -323,7 +323,7 @@ test('CPs properly calculate masked data for multiple parties', done => {
       return oprf.hashToPoint(keyList.pop());
     });
 
-    option.url = creatorDomains[1] + '/listcreator/computeAndSendShares';
+    option.url = dataDomains[1] + '/listcreator/computeAndSendShares';
     option.data.input = input2;
     option.data.cpDomains = cpDomains;
 
@@ -361,7 +361,7 @@ test('CPs properly write masked data for single party to table', done => {
     });
 
     let option = JSON.parse(defaultOptions);
-    option.url = creatorDomains[0] + '/listcreator/computeAndSendShares';
+    option.url = dataDomains[0] + '/listcreator/computeAndSendShares';
     option.data.input = input;
     option.data.cpDomains = cpDomains;
 
@@ -397,7 +397,7 @@ test('Querier gets correct table data back from CP', done => {
     });
 
     let option = JSON.parse(defaultOptions);
-    option.url = creatorDomains[0] + '/listcreator/computeAndSendShares';
+    option.url = dataDomains[0] + '/listcreator/computeAndSendShares';
     option.data.input = input;
     option.data.cpDomains = cpDomains;
 
@@ -414,7 +414,7 @@ test('Querier gets correct table data back from CP', done => {
       return entry.ssn;
     });
 
-    const result = await querier.getTableData(creatorDomains[0]);
+    const result = await querier.getTableData(dataDomains[0]);
 
     expect(result).toEqual(correct);
     done();
@@ -431,7 +431,7 @@ test('CPs properly calculate masked data for multiple requests from single party
     });
 
     let option = JSON.parse(defaultOptions);
-    option.url = creatorDomains[0] + '/listcreator/computeAndSendShares';
+    option.url = dataDomains[0] + '/listcreator/computeAndSendShares';
     option.data.input = input;
     option.data.cpDomains = cpDomains;
 
@@ -491,14 +491,14 @@ test('CPs properly calculate masked data for multiple requests from multiple par
   oprf.ready.then(async function () {
     await deleteTestFiles();
 
-    for (let i = 0; i < creatorDomains.length; i++) {
+    for (let i = 0; i < dataDomains.length; i++) {
       const input = dataGenerator.generateSsnArray(dataSize);
       let keys = cpKeys.map(keyList => {
         return oprf.hashToPoint(keyList.pop());
       });
 
       let option = JSON.parse(defaultOptions);
-      option.url = creatorDomains[i] + '/listcreator/computeAndSendShares';
+      option.url = dataDomains[i] + '/listcreator/computeAndSendShares';
       option.data.input = input;
       option.data.cpDomains = cpDomains;
 
@@ -595,7 +595,7 @@ test('querylist/checkIfInList properly returns indexes of values in table', done
     }
 
     let option = JSON.parse(defaultOptions);
-    option.url = creatorDomains[0] + '/listcreator/computeAndSendShares';
+    option.url = dataDomains[0] + '/listcreator/computeAndSendShares';
     option.data.input = tableInput;
     option.data.cpDomains = cpDomains;
 
@@ -607,10 +607,10 @@ test('querylist/checkIfInList properly returns indexes of values in table', done
         console.log(error);
       });
 
-    option.url = creatorDomains[1] + '/queryList/checkIfInList';
+    option.url = dataDomains[1] + '/queryList/checkIfInList';
     option.method = 'GET';
     option.data.input = queryList;
-    option.data.creatorDomain = creatorDomains[0];
+    option.data.dataDomain = dataDomains[0];
 
     const result = await axios(option)
       .then(function (response) {

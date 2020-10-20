@@ -113,8 +113,8 @@ config/*
 !config/default.json
 # Config files
 src/p2p/config/*
-src/!p2p/config/default.json
-src/!p2p/config/*.example.json
+!src/p2p/config/default.json
+!src/p2p/config/*.example.json
 src/outsourced/config/*
-src/!outsouced/config/default.json
-src/!outsouced/config/*.example.json
+!src/outsourced/config/default.json
+!src/outsourced/config/*.example.json
