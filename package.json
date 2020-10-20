@@ -18,6 +18,7 @@
   "homepage": "https://github.com/multiparty/psi-pilot-masstech#readme",
   "dependencies": {
     "axios": "^0.19.2",
+    "body-parser": "^1.19.0",
     "config": "^3.3.1",
     "csv-parse": "^4.10.1",
     "csv-writer": "^1.6.0",

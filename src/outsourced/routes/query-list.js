@@ -4,32 +4,25 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const OPRF = require('oprf');
+const config = require('config');
 
 let encodeType = 'ASCII';
 const oprf = new OPRF();
-const cpDomains = [
-  "http://localhost:8000",
-  "http://localhost:8001",
-  "http://localhost:8002"
-]
-const creatorDomains = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3002"
-]
+
 /**
  * Makes a request to one of the compute parties in order to get the stored list data
- * @param  {String} creatorDomain Domain of creator whose list data will be gotten from
- * @returns {String[]} Values that were stored in creatorDomain's list
+ * @param  {String} dataDomain Domain of creator whose list data will be gotten from
+ * @param {String} cpDomain Compute party domain to get list from
+ * @returns {String[]} Values that were stored in dataDomain's list
  */
-async function getTableData(creatorDomain) {
+async function getTableData(dataDomain, cpDomain) {
   var options = {
     method: 'GET',
-    url: cpDomains[0] + '/computeparty/listData',
+    url: cpDomain + '/computeparty/listData',
     data:
-    {
-      creatorDomain: creatorDomain
-    },
+      {
+        dataDomain: dataDomain
+      },
     responseType: 'json'
   };
 
@@ -47,12 +40,12 @@ async function getTableData(creatorDomain) {
 
 /**
  * Creates shares out of the input and sends them to compute parties to be raised to their keys and resummed
- * @param  {String[]} input Plaintext data to be checked against creatorDomain's list
- * @param  {String[]} cpDomains Domains of all compute parties involved in the calculation of creatorDomain's list
- * @param  {String} creatorDomain Domain of creator whose list is being queried
+ * @param  {String[]} input Plaintext data to be checked against dataDomain's list
+ * @param  {String[]} cpDomains Domains of all compute parties involved in the calculation of dataDomain's list
+ * @param  {String} dataDomain Domain of creator whose list is being queried
  * @returns {Object} Returns the shares that were calculated originally, and the results of having the compute parties raise them to their keys and sum them.
  */
-async function computeAndSendShares(input, cpDomains, creatorDomain) {
+async function computeAndSendShares(input, cpDomains, dataDomain) {
 
   await oprf.ready;
 
@@ -95,10 +88,9 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
   // Possibly send some unique key for these requests to ensure that they're the same request
   var defaultOptions = {
     'method': 'GET',
-    'url': creatorDomain,
+    'url': dataDomain,
     data:
-    {
-    },
+      {},
     responseType: 'json'
   };
 
@@ -110,7 +102,7 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
     option.url = domain + "/computeparty/computeFromShares";
     option.domain = domain;
     option.data.input = shares[i];
-    option.data.creatorDomain = creatorDomain;
+    option.data.dataDomain = dataDomain;
     option.data.isUpdate = false;
     options.push(option);
   });
@@ -132,7 +124,7 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
       console.log(error);
     });
 
-  return { "shares": shares, "results": results };
+  return {"shares": shares, "results": results};
 };
 
 /**
@@ -156,7 +148,7 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
  *           type: object
  *           required:
  *            - input
- *            - creatorDomain
+ *            - dataDomain
  *            - cpDomains
  *           properties:
  *             input:
@@ -164,7 +156,7 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
  *               items:
  *                 type: string
  *                 description: Plaintext information to be checked if it is in the specified list
- *             creatorDomain:
+ *             dataDomain:
  *               type: string
  *               description: Domain of the creator whose list should be queried
  *             cpDomains:
@@ -172,7 +164,7 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
  *               description: Domains of all of the compute parties used to create the specified list
  *           example:
  *             input: [ "198488954", "654823719", "495782631", ... ]
- *             creatorDomain: "http://localhost:8000"
+ *             dataDomain: "http://localhost:8000"
  *             cpDomains: [ "http://localhost:3000", "http://localhost:3001", "http://localhost:3002" ]
  *      responses:
  *        "200":
@@ -188,11 +180,11 @@ async function computeAndSendShares(input, cpDomains, creatorDomain) {
 router.get('/checkIfInList', async (req, res, next) => {
   const input = req.body.input;
   const cpDomains = req.body.cpDomains;
-  const creatorDomain = req.body.creatorDomain;
+  const dataDomain = req.body.dataDomain;
 
-  const maskedInput = (await computeAndSendShares(input, cpDomains, creatorDomain)).results[0];
+  const maskedInput = (await computeAndSendShares(input, cpDomains, dataDomain)).results[0];
 
-  const tableData = await getTableData(creatorDomain);
+  const tableData = await getTableData(dataDomain, config.computePartyDomains[0]);
 
   let unionIndexes = [];
 

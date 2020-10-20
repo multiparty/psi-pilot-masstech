@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const OPRF = require('oprf');
 
-const dataGenerator = require('../../utils/data-generator');
 const axios = require('axios');
 const config = require('config');
 
@@ -81,8 +80,6 @@ router.post('/computeAndSendShares', async (req, res, next) => {
 
     const finalShare = oprf.sodium.crypto_core_ristretto255_sub(hashedInput, shareSum);
 
-    let end = oprf.sodium.crypto_core_ristretto255_add(shareSum, finalShare);
-
     elementShares.push(finalShare);
     // result is a list of the original pieces of data, and each index is a list of that data's shares
     result.push(elementShares);
@@ -101,12 +98,11 @@ router.post('/computeAndSendShares', async (req, res, next) => {
   let options = [];
 
   // Possibly send some unique key for these requests to ensure that they're the same request
-  var defaultOptions = {
+  let defaultOptions = {
     'method': 'GET',
     'url': config.domain,
     data:
-    {
-    },
+      {},
     responseType: 'json'
   };
 
@@ -114,11 +110,11 @@ router.post('/computeAndSendShares', async (req, res, next) => {
   defaultOptions = JSON.stringify(defaultOptions);
 
   cpDomains.forEach((domain, i) => {
-    const option = JSON.parse(defaultOptions);
-    option.url = domain + "/computeparty/computeFromShares";
+    let option = JSON.parse(defaultOptions);
+    option.url = domain + '/computeparty/computeFromShares';
     option.domain = domain;
     option.data.input = shares[i];
-    option.data.creatorDomain = config.domain;
+    option.data.dataDomain = config.domain;
     option.data.isUpdate = true;
     options.push(option);
   });
@@ -140,7 +136,7 @@ router.post('/computeAndSendShares', async (req, res, next) => {
       console.log(error);
     });
 
-  res.status(200).json({ "shares": shares, "results": results });
+  res.status(200).json({'shares': shares, 'results': results});
 });
 
 module.exports = {

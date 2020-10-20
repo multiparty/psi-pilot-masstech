@@ -14,7 +14,7 @@ Firstly you will need to create a .env file that contains two values. The first 
 Next you will need 3 config files.  The first two should be placed in the config folder inside of the p2p directory.  One should be for the server acting as the querier and one acting as the list-holder.  All that needs to be specified in these is the "domain", "holderDomain", and "port" values.  These should be different for the two servers.  The final config file should be in a config folder that is in the project directory. Your testing config file should be called "test.json" and should have the same values as your querier config file.
 
 ### Running the Test ###
-First you have to get your two servers running.  Inside of the p2p directory, run "node p2p.js --config=~listHolderConfigFile~" and in another console run "node p2p.js --config=~querierConfigFile~" where ~listHolderConfigFile~ and ~querierConfigFile~ are replaced with your config file names (without the .json).  Now just run the command "npm test -t p2pAPI.test.js" in order to run the p2p tests.
+First you have to get your two servers running.  Inside of the p2p directory, run `node p2p.js --config=listHolderConfig` and in another console run `node p2p.js --config=querierConfig` where `listHolderConfig` and `querierConfig` are replaced with your config file names (without the .json).  Now just run the command `npm test -t p2pAPI.test.js` in order to run the p2p tests.
 
 ## Demo Steps ##
 
@@ -22,7 +22,7 @@ First you have to get your two servers running.  Inside of the p2p directory, ru
 The same two querier and list holder config files are needed as with testing, except now you will probably want to add "display": true to both of them.  You can also specify the data you want to be queried in the querier list by creating a queryData object in the config file.  The same goes for the list holder; You can specify some of the values that will appear in the table by creating a list called tableData in the list holder config file
 
 ### Running the Demo ###
-First you must get your servers up and running again like with testing, except this time use the different demo config files you created.  Instead of running the test command, however, you will instead run the following commands inside of the p2p directory: "node demo.js --holder --config=~yourHolderConfigFileName~" and "node demo.js --querier --config=~yourQuerierConfigFileName~".  The first command will populate the list, and the second will do the queries to the list, finding any intersections.
+First you must get your servers up and running again like with testing, except this time use the different demo config files you created.  Instead of running the test command, however, you will instead run the following commands inside of the p2p directory: `node demo.js --holder --config=yourHolderConfigFileName` and `node demo.js --querier --config=yourQuerierConfigFileName`.  The first command will populate the list, and the second will do the queries to the list, finding any intersections.
 
 # Outsourced#
 
@@ -31,13 +31,13 @@ First you must get your servers up and running again like with testing, except t
 You do not need any .env files for the outsourced implementation.  First choose how many compute parties you want there to be and create a config file for them in the config folder inside of the outsourced directory.  For list creators do the same thing, decide how many creators you want and make a config file for each of them. Each of these should contain unique values of "domain" and "port" and two lists called "computePartyDomains" and "creatorDomains" that are a list of *all* the CP and creator domains.  Each of the compute party config files needs a list called "testKeys" that contains about 15 strings (these are used to mimic randomized keys throughout the tests).  Finally, you should make a config file called "test.json" in the config folder in the project's top-level directory.  This should contain the "computePartyDomains" and "creatorDomains" lists, and a list called "testKeys" which is a list of the "testKeys" lists in the CP config files (these should be in the same order as teh computePartyDomains list);
 
 ### Running the Test ###
-First you have to get all of your servers running.  Run the command "node outsourced.js --test --config=~configFileName~" for every erver you want running where ~configFileName~ is replaced by their config file name (excluding the file extension).  The --test flag can be excluded for list creator servers.  Now run the command "npm test -t outsourced.test.js" to run the tests for the outsourced implementation.
+First you have to get all of your servers running.  Run the command `node outsourced.js --test --config=configFileName` for every server you want running where `configFileName` is replaced by their config file name (excluding the file extension).  The --test flag can be excluded for list creator servers.  Now run the command `npm test -t outsourced.test.js` to run the tests for the outsourced implementation.
 
 
 ## Demo Steps ##
 
 ### Required Files ###
-Running the demo requires the same files as running the test except you do not need the "testKeys" arrays in the config files, nor do you need the "test.json" config file.  You will also need to create a demo file that contains the two lists of domains, and a queryData object and tableData list in the same vein as with the P2P implementation.  The overlap of these two lists should end up being what displays.
+Look at the *.example.json files in the config folder for a potential configuration. In this instance we have one data contributor, one query party, and two compute parties.
 
 ### Running the Demo ###
-First run all of your servers again.  For both creators and compute parties, you will just run "node outsourced.js --config~configFileName~" replacing ~configFileName with their respective config file names.  Now just run these two commands: "node demo.js --create --config=~demoConfigFileName~" and "node demo.js --query --config=~demoConfigFileName~"
+First run all of your servers again. For all data holders, compute parties, and query parties, you will just run `node outsourced.js --config=configFile` replacing `configFile` with their respective config file names. Run the following command to distribute the secret shares between the compute parties: `node demo.js --create --config=data1.example`. At this point you can terminate the data server. Finally have the query party server connect to the compute parties to find the overlap in records: `node demo.js --query --config=query1.example`.

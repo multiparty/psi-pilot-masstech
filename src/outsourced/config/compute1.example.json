@@ -1,0 +1,11 @@
+{
+  "encodeType": "ASCII",
+  "domain": "http://localhost:8000",
+  "computePartyDomains": [
+    "http://localhost:8000",
+    "http://localhost:8001"
+  ],
+  "dataDomains": [
+    "http://localhost:3000"
+  ]
+}

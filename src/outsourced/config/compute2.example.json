@@ -1,0 +1,13 @@
+{
+  "encodeType": "ASCII",
+  "domain": "http://localhost:8001",
+  "fileName": "table",
+  "computePartyDomains": [
+    "http://localhost:8000",
+    "http://localhost:8001"
+  ],
+  "dataDomains": [
+    "http://localhost:3000"
+  ],
+  "dataSize": 1000
+}

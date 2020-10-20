@@ -1,15 +1,13 @@
 {
   "encodeType": "ASCII",
-  "port": 3000,
   "domain": "http://localhost:3000",
-  "serverDomain": "http://localhost:3000",
   "fileName": "table",
   "computePartyDomains": [
     "http://localhost:8000",
     "http://localhost:8001",
     "http://localhost:8002"
   ],
-  "creatorDomains": [
+  "dataDomains": [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3002"

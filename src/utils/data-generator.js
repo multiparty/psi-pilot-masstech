@@ -4,6 +4,7 @@ const fs = require('fs');
 
 const Fakerator = require("fakerator");
 const fakerator = Fakerator();
+const OPRF = require('oprf');
 
 
 /**
@@ -125,6 +126,14 @@ function generateAddress() {
   return address;
 }
 
+async function generateKey() {
+  const oprf = new OPRF();
+  await oprf.ready;
+
+  return oprf.encodePoint(oprf.generateRandomScalar(), 'ASCII');
+}
+
 exports.generateData = generateData;
 exports.generateSsnData = generateSsnData;
 exports.generateSsnArray = generateSsnArray;
+exports.generateKey = generateKey;
