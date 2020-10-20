@@ -1,5 +1,5 @@
 # psi-pilot-masstech
-This pilot project for MassTech provides two different solutions to handle Private Set Intersection or Private Membership Testing to enable bank fraud detection. In this banks can query each others list of fraudulent customers, while only learning if their query is a match or not.
+This pilot project for MassTech provides two different solutions to handle Private Set Intersection or Private Membership Testing to enable bank fraud detection. In this banks can query each other's list of fraudulent customers, while only learning if their query is a match or not.
 
 The first solution is a peer-to-peer setting where banks communicate directly with each other, which is more straightforward to implement but requires banks to be online when a different bank wants to query their data. It also incurs a higher bandwidth cost for participating banks when updating their records.
 The second version enables banks to securely outsource the computation to a different set of non-colluding parties, which allows them to only be online when they update their list of fraudulent customers. The computation is then performed by two or more compute parties, who only learn the size of the list of fraudulent customers, and how often a query is performed. Both versions assume a semi-honest model, i.e. where no parties deviate from the prescribed protocol.
@@ -22,7 +22,7 @@ First you have to get your two servers running.  Inside of the p2p directory, ru
 The same two querier and list holder config files are needed as with testing, except now you will probably want to add "display": true to both of them.  You can also specify the data you want to be queried in the querier list by creating a queryData object in the config file.  The same goes for the list holder; You can specify some of the values that will appear in the table by creating a list called tableData in the list holder config file
 
 ### Running the Demo ###
-First you must get your servers up and running again like with testing, except this time use the different demo config files you created.  Instead of running the test command, however, you will instead run the following commands inside of the p2p directory: `node demo.js --holder --config=yourHolderConfigFileName` and `node demo.js --querier --config=yourQuerierConfigFileName`.  The first command will populate the list, and the second will do the queries to the list, finding any intersections.
+First you must get your servers up and running again like with testing, except this time use the different demo config files you created.  Instead of running the test command, however, you will instead run the following commands inside of the p2p directory: `node demo.js --holder --config=yourDataConfigFileName` and `node demo.js --querier --config=yourQuerierConfigFileName`.  The first command will populate the list, and the second will do the queries to the list, finding any intersections.
 
 # Outsourced#
 
@@ -37,7 +37,7 @@ First you have to get all of your servers running.  Run the command `node outsou
 ## Demo Steps ##
 
 ### Required Files ###
-Look at the *.example.json files in the config folder for a potential configuration. In this instance we have one data contributor, one query party, and two compute parties.
+Look at the \*.example.json files in the config folder for a potential configuration. In this instance we have one data contributor, one query party, and two compute parties.
 
 ### Running the Demo ###
 First run all of your servers again. For all data holders, compute parties, and query parties, you will just run `node outsourced.js --config=configFile` replacing `configFile` with their respective config file names. Run the following command to distribute the secret shares between the compute parties: `node demo.js --create --config=data1.example`. At this point you can terminate the data server. Finally have the query party server connect to the compute parties to find the overlap in records: `node demo.js --query --config=query1.example`.
