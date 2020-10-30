@@ -276,17 +276,10 @@ router.get('/computeFromShares', async (req, res, next) => {
             return shares;
           });
 
-          cpShares[0].forEach((value, shareIndex) => {
-            let randVal = oprf.generateRandomScalar();
-            let share = randVal;
-
-            // TODO use new oprf functions for addition and subtraction
-            cpShares.forEach((shares, cpIndex) => {
-              share = oprf.sodium.crypto_core_ristretto255_add(share, shares[shareIndex]);
-            });
-            share = oprf.sodium.crypto_core_ristretto255_sub(share, randVal);
-            currentData.push(share);
-          });
+          // cpShares is array of array of shares, indexed by compute party
+          // Sum shares pairwise
+          const sum = (r, a) => r.map((b, i) => oprf.sodium.crypto_core_ristretto255_add(a[i], b));
+          currentData = cpShares.reduce(sum);
 
           currentData = currentData.map(value => {
             return oprf.encodePoint(value, encodeType);
