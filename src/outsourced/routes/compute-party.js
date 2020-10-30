@@ -110,7 +110,7 @@ router.get('/raiseToKey', (req, res, next) => {
       // Key was not found for specified dataDomain
       if (keyIndex === -1) {
         console.log('Key not found error!');
-        res.status(400).send('Invalid creator domain sent in request. No key listed for creator domain ' + dataDomain + '.');
+        res.status(400).send('Invalid data domain sent in request. No key listed for data domain ' + dataDomain + '.');
       }
 
       oprf.ready.then(function () {
@@ -212,7 +212,7 @@ router.get('/computeFromShares', async (req, res, next) => {
 
   var defaultOptions = {
     'method': 'GET',
-    'url': 'http://localhost:3000',
+    'url': config.domain,
     data:
       {
         input: input[0]
